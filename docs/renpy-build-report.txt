@@ -1,19 +1,19 @@
-== Ren'Py web build report, Sat Oct 24 17:38:48 UTC 2026
+== Ren'Py web build report, Sat Oct 24 18:03:05 UTC 2026
 
-== Choosing a Ren'Py version
+== 18:03:05 Choosing a Ren'Py version
 Recent versions: 8.6.0 8.5.3 8.5.2 8.5.1 8.5.0 8.4.1 8.4.0 8.3.7 8.3.6 8.3.5 8.3.4 8.3.3
 Using Ren'Py 8.6.0
 
-== Downloading Ren'Py 8.6.0
+== 18:03:07 Downloading Ren'Py 8.6.0
 SDK ready: LICENSE.txt doc gui launcher lib renpy renpy.app renpy.exe renpy.py renpy.sh sdk-fonts the_question tutorial update web 
 
-== Creating the project
+== 18:03:26 Creating the project
 Template has no button images yet; generating them.
 GUI images: 52 files
 Project files: audio cmv_data.rpy cmv_engine.rpy cmv_overrides.rpy cmv_play.rpy cmv_screens.rpy cmv_style.rpy fonts gui gui.rpy images libs options.rpy screens.rpy script.rpy testcases.rpy 
 
-== Ren'Py lint
-﻿Ren'Py 8.6.0.25112108 lint report, generated at: Sat Oct 24 17:39:14 2026
+== 18:03:33 Ren'Py lint
+﻿Ren'Py 8.6.0.25112108 lint report, generated at: Sat Oct 24 18:03:35 2026
 
 
 Unreachable Statements:
@@ -35,4 +35,57 @@ Lint is not a substitute for thorough testing. Remember to update Ren'Py
 before releasing. New releases fix bugs and improve compatibility.
 lint exit code: 0
 
-== Smoke test: playing the opening
+== 18:03:35 Web build
+Scanning Ren'Py files...
+
+All packages have been built.
+
+Due to the presence of permission information, unpacking and repacking the Linux and Macintosh distributions on Windows is not supported.
+Preparing progressive download
+
+Built: 53M in /home/runner/work/contents-may-vary/contents-may-vary/docs/renpy
+game
+game.zip
+icons
+index.html
+index.html.symbols
+manifest.json
+pwa_catalog.json
+renpy-pre.js
+renpy.data
+renpy.js
+renpy.wasm
+service-worker.js
+web-presplash.jpg
+
+== 18:03:39 Smoke test: playing the opening on a virtual screen
+
+[rpytest] Starting test run
+[rpytest] Platform:      Linux-7.0.0-1017-azure-x86_64-with-glibc2.43
+[rpytest] Python:        3.12.8
+[rpytest] Ren'Py:        Ren'Py 8.6.0.25112108
+[rpytest] Game Version:  1.0
+
+[rpytest] [exc] + global
+[rpytest] [exc]   - default
+[rpytest] [exc]   - default (3.618 s)
+
+[rpytest] Test outcomes (Detailed)
+[rpytest] PASSED  global               - (5.894 s)
+[rpytest]   PASSED  default              - (3.618 s)
+
+====================
+
+[rpytest] Test outcomes (Summary)
+[rpytest] Test suites:     1 |     1 passed |     0 xfailed |     0 failed |     0 xpassed |     0 skipped |     0 not run
+[rpytest] Test cases :     1 |     1 passed |     0 xfailed |     0 failed |     0 xpassed |     0 skipped |     0 not run
+[rpytest] Test hooks :     1 |     1 passed |     0 xfailed |     0 failed |     0 xpassed |     0 skipped |     0 not run
+[rpytest] Assertions :     0 |     0 passed |     0 xfailed |     0 failed |     0 xpassed | 
+
+[rpytest] Time: 5.895 s
+[rpytest] Status: PASSED 
+
+test exit code: 0
+Smoke test: passed
+
+BUILD OK
