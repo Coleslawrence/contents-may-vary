@@ -44,7 +44,7 @@ The tests use Playwright with Chromium.
 
 ## Ren'Py edition
 
-A story version of the game, built for Ren'Py, lives in [`renpy/`](renpy/). Setup steps are in `renpy/README.md`.
+A story version of the game, built for Ren'Py, lives in [`renpy/`](renpy/). Play it in a browser at https://coleslawrence.github.io/contents-may-vary/renpy/ (rebuilt automatically whenever `renpy/` changes). Setup steps for the Ren'Py launcher are in `renpy/README.md`.
 
 ## Credits
 

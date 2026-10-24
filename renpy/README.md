@@ -24,9 +24,11 @@ Other resolutions work too (everything scales), but the art was drawn for 1920×
 - The panels on the right are the visitor and your last dice roll.
 - Lose a story fight (Sister Hesk, the Rival Mimic) and you simply try again. Shatter in an ordinary fight and you choose: retry, or accept the loss and carry on.
 
-## Playing on iPhone
+## Play in a browser (including iPhone)
 
-Ren'Py can export a web version: in the launcher choose **Web (Beta)**, then **Build Web Application**. The folder it makes can be hosted on GitHub Pages like your web game and played in Safari.
+https://coleslawrence.github.io/contents-may-vary/renpy/
+
+A GitHub Action (`.github/workflows/renpy-web.yml`) rebuilds this web version whenever anything in `renpy/` changes. It also runs Ren'Py's lint check and saves the result to `docs/renpy-build-report.txt`. In Safari, Share → Add to Home Screen to open it like an app.
 
 ## What's in `game/`
 

@@ -1,0 +1,101 @@
+name: Build Ren'Py web version
+
+# Builds renpy/ into a web game at docs/renpy/, which GitHub Pages serves at
+# https://coleslawrence.github.io/contents-may-vary/renpy/
+on:
+  push:
+    branches: [main]
+    paths:
+      - "renpy/**"
+      - ".github/workflows/renpy-web.yml"
+  workflow_dispatch:
+    inputs:
+      renpy_version:
+        description: "Ren'Py version to build with"
+        required: false
+        default: "8.3.7"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: renpy-web
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RENPY_VERSION: ${{ github.event.inputs.renpy_version || '8.3.7' }}
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PROJECT: build/ContentsMayVary
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Ren'Py and its web support
+        run: |
+          set -e
+          V="$RENPY_VERSION"
+          curl -fsSL -o sdk.tar.bz2 "https://www.renpy.org/dl/$V/renpy-$V-sdk.tar.bz2"
+          tar xjf sdk.tar.bz2
+          SDK="$PWD/renpy-$V-sdk"
+          curl -fsSL -o web.zip "https://www.renpy.org/dl/$V/renpy-$V-web.zip"
+          unzip -q web.zip -d webtmp
+          # The zip holds a web/ folder, either at the top or one level down.
+          WEBDIR=$(dirname "$(find webtmp -name hash.txt -path '*web/*' | head -1)")
+          mv "$WEBDIR" "$SDK/web"
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+          ls "$SDK"
+
+      - name: Create the project and add the game
+        run: |
+          set -e
+          mkdir -p "$PROJECT/game"
+          "$SDK/renpy.sh" "$SDK/launcher" generate_gui "$PROJECT" --start \
+            --width 1920 --height 1080 --accent "#d9a441" --template "$SDK/gui"
+          cp -r renpy/game/. "$PROJECT/game/"
+          sed -i 's/^define config.name = .*/define config.name = _("Contents May Vary")/' "$PROJECT/game/options.rpy"
+          sed -i 's/^define build.name = .*/define build.name = "ContentsMayVary"/' "$PROJECT/game/options.rpy"
+          ls "$PROJECT/game"
+
+      - name: Check the game with Ren'Py lint
+        run: |
+          set +e
+          mkdir -p docs
+          {
+            echo "Ren'Py $RENPY_VERSION build report, $(date -u)"
+            echo
+            "$SDK/renpy.sh" "$PROJECT" lint 2>&1
+            echo "lint exit code: $?"
+          } > lint.txt || true
+          cat lint.txt
+
+      - name: Build the web version
+        run: |
+          set -e
+          rm -rf docs/renpy
+          "$SDK/renpy.sh" "$SDK/launcher" web_build "$PROJECT" --destination "$PWD/docs/renpy" 2>&1 | tail -40
+          ls -la docs/renpy
+
+      - name: Save the build report
+        if: always()
+        run: |
+          mkdir -p docs
+          cp lint.txt docs/renpy-build-report.txt 2>/dev/null || echo "no lint report" > docs/renpy-build-report.txt
+          echo "" >> docs/renpy-build-report.txt
+          echo "Web build step: ${{ job.status }}" >> docs/renpy-build-report.txt
+
+      - name: Publish to GitHub Pages folder
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/renpy docs/renpy-build-report.txt 2>/dev/null || git add -A docs/renpy-build-report.txt
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "Build Ren'Py web version [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
