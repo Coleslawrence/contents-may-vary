@@ -45,9 +45,25 @@ echo "SDK ready: $(ls "$SDK" | tr '\n' ' ')"
 
 step "Creating the project"
 rm -rf "$PROJECT" && mkdir -p "$PROJECT/game"
+# The template's fixed images (menu buttons, bars, sliders, scrollbars) are
+# copied by the launcher when it makes a new project; generate_gui on its own
+# doesn't. If this SDK's template has none yet, let it generate them first.
+if [ ! -f "$SDK/gui/game/gui/button/idle_background.png" ]; then
+  echo "Template has no button images yet; generating them."
+  "$SDK/renpy.sh" "$SDK/gui" lint > /dev/null 2>&1
+fi
+cp -r "$SDK/gui/game/gui" "$PROJECT/game/gui"
 "$SDK/renpy.sh" "$SDK/launcher" generate_gui "$PROJECT" --start \
   --width 1920 --height 1080 --accent "#d9a441" --template "$SDK/gui" || fail "generate_gui"
 cp -r "$ROOT/renpy/game/." "$PROJECT/game/"
+cp "$ROOT/renpy/web-smoke-test.rpy" "$PROJECT/game/testcases.rpy"
+MISSING=""
+for f in button/idle_background.png button/hover_background.png bar/left.png bar/right.png \
+         slider/horizontal_idle_bar.png scrollbar/vertical_idle_bar.png button/choice_idle_background.png; do
+  [ -f "$PROJECT/game/gui/$f" ] || MISSING="$MISSING $f"
+done
+echo "GUI images: $(cd "$PROJECT/game/gui" && find . -name '*.png' | wc -l) files"
+[ -z "$MISSING" ] || fail "GUI images missing:$MISSING"
 sed -i 's/^define config.name = .*/define config.name = _("Contents May Vary")/' "$PROJECT/game/options.rpy"
 sed -i 's/^define build.name = .*/define build.name = "ContentsMayVary"/' "$PROJECT/game/options.rpy"
 echo "Project files: $(ls "$PROJECT/game" | tr '\n' ' ')"
@@ -61,9 +77,21 @@ if [ -f "$PROJECT/traceback.txt" ]; then echo "-- traceback.txt"; cat "$PROJECT/
 if [ -f "$PROJECT/errors.txt" ]; then echo "-- errors.txt"; cat "$PROJECT/errors.txt"; fi
 [ $LINT -eq 0 ] || fail "lint found errors"
 
+step "Smoke test: playing the opening"
+timeout 600 "$SDK/renpy.sh" "$PROJECT" test --report-detailed > "$WORK/test.txt" 2>&1
+TEST=$?
+tr '\r' '\n' < "$WORK/test.txt" | tail -80
+echo "test exit code: $TEST"
+if [ -f "$PROJECT/traceback.txt" ]; then echo "-- traceback.txt"; cat "$PROJECT/traceback.txt"; fail "the game crashed during the smoke test"; fi
+[ $TEST -eq 0 ] || fail "smoke test failed"
+grep -qiE "fail|error" "$WORK/test.txt" && ! grep -qiE "0 failed|failed: 0" "$WORK/test.txt" && echo "(check the test output above for failures)"
+
 step "Web build"
 rm -rf "$OUT"
-"$SDK/renpy.sh" "$SDK/launcher" web_build "$PROJECT" --destination "$OUT" || fail "web_build"
+"$SDK/renpy.sh" "$SDK/launcher" web_build "$PROJECT" --destination "$OUT" > "$WORK/web.txt" 2>&1
+WEB=$?
+tr '\r' '\n' < "$WORK/web.txt" | grep -vE ' - [0-9]+ of [0-9]+$'
+[ $WEB -eq 0 ] || fail "web_build"
 [ -f "$OUT/index.html" ] || fail "web build produced no index.html"
 echo "Built: $(du -sh "$OUT" | cut -f1) in $OUT"
 ls "$OUT"
