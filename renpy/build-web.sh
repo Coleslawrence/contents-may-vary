@@ -12,7 +12,19 @@ cd "$WORK"
 
 echo "== Ren'Py web build report, $(date -u)"
 
-step() { echo; echo "== $*"; }
+step() { echo; echo "== $(date -u +%H:%M:%S) $*"; }
+
+# Run a command with a time limit, killing everything it started if it overruns.
+limited() {
+  local t=$1; shift
+  setsid "$@" &
+  local pid=$!
+  ( sleep "$t"; echo "(timed out after ${t}s)"; kill -TERM -"$pid" 2>/dev/null; sleep 5; kill -KILL -"$pid" 2>/dev/null ) &
+  local watch=$!
+  wait "$pid"; local rc=$?
+  kill "$watch" 2>/dev/null; wait "$watch" 2>/dev/null
+  return $rc
+}
 fail() { echo; echo "BUILD FAILED: $*"; exit 1; }
 
 step "Choosing a Ren'Py version"
@@ -50,7 +62,7 @@ rm -rf "$PROJECT" && mkdir -p "$PROJECT/game"
 # doesn't. If this SDK's template has none yet, let it generate them first.
 if [ ! -f "$SDK/gui/game/gui/button/idle_background.png" ]; then
   echo "Template has no button images yet; generating them."
-  "$SDK/renpy.sh" "$SDK/gui" lint > /dev/null 2>&1
+  limited 300 "$SDK/renpy.sh" "$SDK/gui" lint > /dev/null 2>&1
 fi
 cp -r "$SDK/gui/game/gui" "$PROJECT/game/gui"
 "$SDK/renpy.sh" "$SDK/launcher" generate_gui "$PROJECT" --start \
@@ -69,7 +81,7 @@ sed -i 's/^define build.name = .*/define build.name = "ContentsMayVary"/' "$PROJ
 echo "Project files: $(ls "$PROJECT/game" | tr '\n' ' ')"
 
 step "Ren'Py lint"
-"$SDK/renpy.sh" "$PROJECT" lint "$WORK/lint.txt"
+limited 300 "$SDK/renpy.sh" "$PROJECT" lint "$WORK/lint.txt"
 LINT=$?
 [ -f "$WORK/lint.txt" ] && cat "$WORK/lint.txt"
 echo "lint exit code: $LINT"
@@ -77,18 +89,9 @@ if [ -f "$PROJECT/traceback.txt" ]; then echo "-- traceback.txt"; cat "$PROJECT/
 if [ -f "$PROJECT/errors.txt" ]; then echo "-- errors.txt"; cat "$PROJECT/errors.txt"; fi
 [ $LINT -eq 0 ] || fail "lint found errors"
 
-step "Smoke test: playing the opening"
-timeout 600 "$SDK/renpy.sh" "$PROJECT" test --report-detailed > "$WORK/test.txt" 2>&1
-TEST=$?
-tr '\r' '\n' < "$WORK/test.txt" | tail -80
-echo "test exit code: $TEST"
-if [ -f "$PROJECT/traceback.txt" ]; then echo "-- traceback.txt"; cat "$PROJECT/traceback.txt"; fail "the game crashed during the smoke test"; fi
-[ $TEST -eq 0 ] || fail "smoke test failed"
-grep -qiE "fail|error" "$WORK/test.txt" && ! grep -qiE "0 failed|failed: 0" "$WORK/test.txt" && echo "(check the test output above for failures)"
-
 step "Web build"
 rm -rf "$OUT"
-"$SDK/renpy.sh" "$SDK/launcher" web_build "$PROJECT" --destination "$OUT" > "$WORK/web.txt" 2>&1
+limited 900 "$SDK/renpy.sh" "$SDK/launcher" web_build "$PROJECT" --destination "$OUT" > "$WORK/web.txt" 2>&1
 WEB=$?
 tr '\r' '\n' < "$WORK/web.txt" | grep -vE ' - [0-9]+ of [0-9]+$'
 [ $WEB -eq 0 ] || fail "web_build"
@@ -96,4 +99,19 @@ tr '\r' '\n' < "$WORK/web.txt" | grep -vE ' - [0-9]+ of [0-9]+$'
 echo "Built: $(du -sh "$OUT" | cut -f1) in $OUT"
 ls "$OUT"
 
-echo; echo "BUILD OK"
+step "Smoke test: playing the opening on a virtual screen"
+# Ren'Py needs real graphics to play, so give it a virtual X display.
+# The web build above is published whatever happens here; a failure is
+# reported at the end of this file.
+rm -f "$PROJECT/traceback.txt"
+SMOKE="passed"
+( unset SDL_VIDEODRIVER
+  limited 300 xvfb-run -a -s "-screen 0 1920x1080x24" "$SDK/renpy.sh" "$PROJECT" test --report-detailed ) > "$WORK/test.txt" 2>&1
+TEST=$?
+tr '\r' '\n' < "$WORK/test.txt" | tail -80
+echo "test exit code: $TEST"
+if [ -f "$PROJECT/traceback.txt" ]; then echo "-- traceback.txt"; cat "$PROJECT/traceback.txt"; SMOKE="CRASHED"; fi
+[ $TEST -eq 0 ] || [ "$SMOKE" != "passed" ] || SMOKE="FAILED (exit $TEST)"
+echo "Smoke test: $SMOKE"
+
+if [ "$SMOKE" = "passed" ]; then echo; echo "BUILD OK"; else echo; echo "BUILD PUBLISHED, BUT SMOKE TEST $SMOKE"; exit 2; fi

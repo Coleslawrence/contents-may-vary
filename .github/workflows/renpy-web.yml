@@ -26,6 +26,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       RENPY_VERSION: ${{ github.event.inputs.renpy_version }}
       SDL_VIDEODRIVER: dummy
