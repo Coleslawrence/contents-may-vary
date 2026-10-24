@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Builds Contents May Vary.
-dist/      -> the installable web app (host this folder on GitHub Pages)
+docs/      -> the installable web app (GitHub Pages serves this folder)
 preview.html -> the same game as a single body fragment for a Claude artifact preview"""
 import os, json, shutil
 ROOT = os.path.dirname(os.path.abspath(__file__)); S = lambda f: open(os.path.join(ROOT, 'src', f), encoding='utf-8').read()
@@ -11,7 +11,7 @@ body = f'<style>\n{css}\n</style>\n<div id="app"></div>\n<script>\n{js1}\n</scri
 # artifact preview fragment
 open(os.path.join(ROOT, 'preview.html'), 'w', encoding='utf-8').write(f'<title>Contents May Vary</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n{fonts}\n{body}')
 # installable app
-d = os.path.join(ROOT, 'dist'); os.makedirs(os.path.join(d, 'icons'), exist_ok=True)
+d = os.path.join(ROOT, 'docs'); os.makedirs(os.path.join(d, 'icons'), exist_ok=True)
 head = f'''<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">

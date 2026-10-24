@@ -18,17 +18,25 @@ Your save lives on the device. To move it, open **Settings → Back up your save
 | `src/helpers.js` | Odds, advice, self-managing stomach, timers |
 | `src/ui.js`, `src/art.js`, `src/style.css` | Screens and drawing |
 | `src/sw.js` | Offline support |
-| `build.py` | Builds `dist/` (the app) and `preview.html` (a Claude artifact preview) |
+| `build.py` | Builds `docs/` (the app, served by GitHub Pages) and `preview.html` (a Claude artifact preview) |
 | `tools/pace.js` | Simulates days of play and checks the balance targets |
 | `tools/fit.js`, `tools/cut.js` | Check every screen fits phones and no text is cut off |
 | `tools/pwa.js` | Checks install files, offline play and save codes |
+
+## Play on iPhone
+
+1. Open https://coleslawrence.github.io/contents-may-vary/ in Safari.
+2. Tap Share, then Add to Home Screen.
+3. Open it from the new icon. It works offline after the first load.
+
+Saves stay on the phone. Use Settings → Back up for a save code you can keep somewhere safe.
 
 ## Build and test
 
 ```
 python3 build.py
 node tools/pace.js 24 18
-(cd dist && python3 -m http.server 8765) &
+(cd docs && python3 -m http.server 8765) &
 node tools/fit.js && node tools/cut.js && node tools/pwa.js
 ```
 
