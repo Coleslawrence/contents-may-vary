@@ -5,3 +5,4 @@ node_modules/
 /P-*.png
 /Q-*.png
 /I-*.png
+/build/
