@@ -1,0 +1,2038 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Contents May Vary</title>
+<meta name="description" content="A mimic idle game: lure visitors, swallow them, become what you eat.">
+<meta name="theme-color" content="#16121d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mimic">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Grenze:wght@800&family=JetBrains+Mono:wght@400&display=swap">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}html{-webkit-text-size-adjust:100%;touch-action:manipulation}</style>
+</head><body>
+<style>
+/* Layout: one phone column. Dungeon scene up top, big labelled controls below, a timers card for everything that counts down. Light and dark both supported; the scene itself is always torchlit. */
+:root {
+  --bg: #f6efe4; --bg2: #efe5d5; --card: #fffaf2; --card2: #f3e9d9; --line: #d9c9ae; --line2: #bfa983;
+  --text: #241a12; --muted: #5d4c3c; --accent: #9b5d22; --accent-ink: #fffaf0; --accent-2: #7a4718;
+  --good: #2f7a3b; --good-bg: #e2f2df; --bad: #b3261e; --bad-bg: #fbe3df; --warn: #8a5a00; --warn-bg: #fdf0cf;
+  --hp: #2f8a43; --xp: #b8862a; --belly: #a8642a; --eye: #6e4a9e;
+  --parch: #f4e7c8; --parch-ink: #3a2a18; --parch-line: #c9ad74;
+  --scene: #241d2c; --scene-2: #1a1520; --scene-text: #f3ead9;
+  --f-d: "Grenze", "Palatino Linotype", Georgia, serif; --f-b: "Atkinson Hyperlegible", "Verdana", system-ui, sans-serif; --f-m: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --fs: 17px;
+  --t-beast: #c99a62; --t-humanoid: #e9c79c; --t-undead: #b9c2cc; --t-fiend: #ff6f52; --t-celestial: #ffe08a; --t-construct: #9db4c8; --t-dragon: #ff9f45; --t-fey: #d59cff; --t-elemental: #ff8a3d; --t-giant: #a98c74; --t-ooze: #9fd06e; --t-plant: #79c86a; --t-aberration: #c47de0; --t-monstrosity: #e0707f;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17131c; --bg2: #1e1925; --card: #262030; --card2: #2f283b; --line: #3d3450; --line2: #5a4f6e;
+  --text: #f4ede2; --muted: #c4b8cf; --accent: #e0a54f; --accent-ink: #1c1206; --accent-2: #b97c2e;
+  --good: #8fd88a; --good-bg: #1f3322; --bad: #ff8a7d; --bad-bg: #3a1f1d; --warn: #ffd06a; --warn-bg: #3a2f17;
+  --hp: #7bd67f; --xp: #f0c15c; --belly: #e09a5c; --eye: #c3a2f0;
+  --parch: #f1e4c4; --parch-ink: #2f2214; --parch-line: #b8a06b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #17131c; --bg2: #1e1925; --card: #262030; --card2: #2f283b; --line: #3d3450; --line2: #5a4f6e;
+  --text: #f4ede2; --muted: #c4b8cf; --accent: #e0a54f; --accent-ink: #1c1206; --accent-2: #b97c2e;
+  --good: #8fd88a; --good-bg: #1f3322; --bad: #ff8a7d; --bad-bg: #3a1f1d; --warn: #ffd06a; --warn-bg: #3a2f17;
+  --hp: #7bd67f; --xp: #f0c15c; --belly: #e09a5c; --eye: #c3a2f0;
+  --parch: #f1e4c4; --parch-ink: #2f2214; --parch-line: #b8a06b; color-scheme: dark; }
+:root.big { --fs: 20px; }
+:root.big .stats { grid-template-columns: 1fr 1fr; }
+:root.big .tiles { grid-template-columns: 1fr 1fr; }
+html { font-size: var(--fs); }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 1rem/1.45 var(--f-b); overflow: hidden; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+h1, h2, h3 { margin: 0; font-family: var(--f-d); font-weight: 800; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#app { height: 100%; max-width: 540px; margin: 0 auto; display: grid; grid-template-rows: 1fr auto; }
+@media (min-width: 580px) { #app { border-inline: 1px solid var(--line); } }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.ic { width: 1.5em; height: 1.5em; flex: none; display: block; }
+.ic.sm { width: 1.15em; height: 1.15em; }
+
+/* header */
+.hdr { padding-block: 10px 8px; background: var(--bg2); border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.hrow { display: flex; align-items: center; gap: 10px; }
+.hrow .nm { font-family: var(--f-d); font-weight: 800; font-size: 1.35rem; line-height: 1; }
+.hrow .tier { color: var(--muted); font-size: .85rem; }
+.hrow .grow { flex: 1; min-width: 0; }
+.iconbtn { width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line2); background: var(--card); display: grid; place-items: center; cursor: pointer; }
+.stats { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 6px; }
+.stat { display: grid; gap: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; min-width: 0; }
+.stat .t { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); }
+.stat b { font-size: .95rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter { height: 7px; border-radius: 4px; background: var(--card2); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 4px; transition: width .4s; }
+.hpc { color: var(--hp); } .xpc { color: var(--xp); } .bec { color: var(--belly); } .eyc { color: var(--eye); }
+
+/* scene */
+main { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.scene { position: relative; flex: 0 0 auto; height: clamp(150px, 27vh, 230px); overflow: hidden; color: var(--scene-text);
+  background: radial-gradient(240px 140px at 16% 28%, rgba(255,170,80,.18), transparent 70%), linear-gradient(180deg, transparent 74%, rgba(0,0,0,.35) 74%), repeating-linear-gradient(0deg, transparent 0 25px, rgba(0,0,0,.26) 25px 27px), repeating-linear-gradient(90deg, transparent 0 46px, rgba(0,0,0,.16) 46px 48px), linear-gradient(180deg, var(--scene), var(--scene-2)); }
+.scene .where { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 10px; font-family: var(--f-d); font-size: 1.05rem; text-shadow: 0 1px 0 #000; }
+.scene .where small { display: block; font-family: var(--f-b); font-size: .78rem; opacity: .85; }
+.torch { position: absolute; left: 15%; top: 18%; width: 10px; height: 22px; border-radius: 50% 50% 40% 40%; background: radial-gradient(circle at 50% 70%, #fff3b0, #ffad3b 45%, rgba(255,90,20,0) 75%); animation: flick 2.2s infinite ease-in-out; }
+@keyframes flick { 30% { transform: scale(.92,1.06); } 60% { transform: scale(1.05,.95); } }
+.mimic { position: absolute; left: 66%; bottom: 6%; height: 64%; aspect-ratio: 200 / 170; max-width: 46%; transform: translateX(-50%); }
+.mimic svg { height: 100%; }
+.scene.enc .mimic { left: 34%; }
+.mimic svg { display: block; width: 100%; height: auto; overflow: visible; transform-origin: 50% 100%; }
+.mimic.idle svg { animation: breathe 3.4s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.012, 1.022); } }
+.mimic .top { transition: transform .32s cubic-bezier(.2,1.6,.4,1); transform-box: view-box; }
+.mimic.open .top { transform: translate(0, -24px) rotate(-5deg); }
+.mimic.chomp .top { animation: chomp .42s ease-in-out; }
+@keyframes chomp { 0% { transform: translate(0,-24px) rotate(-5deg); } 40% { transform: translate(0,-2px) rotate(0); } 100% { transform: translate(0,-24px) rotate(-5deg); } }
+.mimic.full svg { animation: gulp .9s ease-in-out infinite; }
+@keyframes gulp { 50% { transform: scale(1.05, .97); } }
+.mimic.hurt svg { animation: shake .35s; }
+@keyframes shake { 20% { transform: translateX(-6px) rotate(-2deg); } 50% { transform: translateX(5px) rotate(1.5deg); } 80% { transform: translateX(-3px); } }
+.mimic .eye { transform-box: fill-box; transform-origin: center; animation: blink 5.2s infinite; }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+.mimic.hold .eye { transform: scaleY(.35); animation: none; }
+.mimic .tongue { transform-box: fill-box; transform-origin: 50% 0; transition: transform .3s, opacity .2s; transform: scaleY(.2); opacity: 0; }
+.mimic.open .tongue { transform: scaleY(1); opacity: 1; }
+.mimic.lick .tongue { animation: lick .9s ease-in-out 2; }
+@keyframes lick { 50% { transform: scaleY(1.25) rotate(8deg); } }
+.tok { position: absolute; right: 11%; bottom: 10%; display: grid; justify-items: center; gap: 3px; animation: tin .5s cubic-bezier(.2,1.2,.4,1); }
+.tok .disc { border-radius: 50%; display: grid; place-items: center; font-family: var(--f-d); font-weight: 800; color: #1b1206; background: radial-gradient(circle at 35% 30%, #fff8, transparent 60%), var(--tc); box-shadow: 0 5px 0 rgba(0,0,0,.35); }
+.tok.sz-T .disc { width: 42px; height: 42px; font-size: 16px; } .tok.sz-S .disc { width: 54px; height: 54px; font-size: 19px; } .tok.sz-M .disc { width: 66px; height: 66px; font-size: 22px; } .tok.sz-L .disc { width: 84px; height: 84px; font-size: 27px; }
+.tok .lab { font-size: .72rem; font-weight: 700; background: rgba(0,0,0,.6); color: #fff; padding: 1px 7px; border-radius: 8px; white-space: nowrap; }
+.tok.stuck { right: 21%; } .tok.stuck .disc { animation: wobble .6s ease-in-out infinite; }
+.tok.gone { animation: tout .5s forwards; } .tok.eaten { animation: teat .45s forwards; }
+@keyframes tin { from { transform: translateX(120px); opacity: 0; } }
+@keyframes tout { to { transform: translateX(160px); opacity: 0; } }
+@keyframes teat { to { transform: translateX(-120px) scale(.1); opacity: 0; } }
+@keyframes wobble { 50% { transform: rotate(-8deg); } }
+.float { position: absolute; font-family: var(--f-d); font-weight: 800; font-size: 1.8rem; pointer-events: none; text-shadow: 0 2px 0 #000; animation: fl 1.1s forwards; }
+.float.me { color: #ff8a7d; } .float.v { color: #ffd06a; }
+@keyframes fl { to { transform: translateY(-44px); opacity: 0; } }
+.qbadge { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 12px; font-size: .8rem; font-weight: 700; color: #1b1206; background: #f0c15c; border-radius: 12px; padding: 3px 10px; }
+
+/* panel */
+.panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; gap: 12px; align-content: start; padding-block: 12px 16px; }
+.big-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; padding: 10px 16px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; box-shadow: 0 4px 0 var(--accent-2); font-family: var(--f-d); font-weight: 800; font-size: 1.45rem; letter-spacing: .02em; }
+.big-btn .ic { width: 1.4em; height: 1.4em; }
+.big-btn small { display: block; font-family: var(--f-b); font-weight: 400; font-size: .8rem; letter-spacing: 0; opacity: .9; }
+.big-btn:disabled { opacity: .5; cursor: not-allowed; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tile { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--line2); background: var(--card); cursor: pointer; text-align: center; }
+.tile b { font-size: .92rem; } .tile small { font-size: .72rem; color: var(--muted); line-height: 1.2; }
+.tile:disabled { opacity: .5; cursor: not-allowed; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.card h3 { font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
+.timer { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; }
+.timer .ic { color: var(--muted); }
+.timer .lbl { font-size: .95rem; font-weight: 700; min-width: 0; }
+.timer .lbl small { display: block; font-weight: 400; font-size: .8rem; color: var(--muted); }
+.timer .clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.1rem; background: var(--card2); border-radius: 8px; padding: 3px 9px; min-width: 4.6em; text-align: center; }
+.timer .meter { grid-column: 2 / -1; }
+.timer.warn .clock { background: var(--bad-bg); color: var(--bad); }
+.sysbox { background: var(--parch); color: var(--parch-ink); border: 1px solid var(--parch-line); border-radius: 6px; padding: 9px 12px; font-family: var(--f-m); font-size: .88rem; line-height: 1.4; cursor: pointer; }
+.sysbox.bad { background: #f6d7cc; }
+.sysbox p + p { margin-top: 4px; }
+
+/* encounter */
+.vcard { display: grid; gap: 8px; }
+.vhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.vhead h2 { font-size: 1.5rem; line-height: 1.05; }
+.vhead .meta { color: var(--muted); font-size: .88rem; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; border: 1.5px solid currentColor; }
+.d-easy { color: var(--good); background: var(--good-bg); } .d-fair { color: var(--warn); background: var(--warn-bg); } .d-hard, .d-deadly { color: var(--bad); background: var(--bad-bg); }
+.hpline { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.hpline .meter { height: 10px; }
+.odds { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.ring { width: 76px; height: 76px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.why { display: grid; gap: 3px; font-size: .88rem; margin: 0; padding: 0; list-style: none; }
+.why li { display: flex; gap: 6px; align-items: flex-start; }
+.why .ok { color: var(--good); } .why .no { color: var(--bad); }
+.event { font-size: 1.05rem; font-weight: 700; min-height: 1.5em; }
+.event.good { color: var(--good); } .event.bad { color: var(--bad); }
+.roll { font-size: .85rem; color: var(--muted); }
+.roll .y { color: var(--good); font-weight: 700; } .roll .n { color: var(--bad); font-weight: 700; } .roll .c { color: var(--warn); font-weight: 700; }
+.recent { display: grid; gap: 2px; font-size: .85rem; color: var(--muted); }
+.acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.act { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 9px; align-items: center; text-align: left; min-height: 72px; padding: 10px 12px; border-radius: 14px; border: 1.5px solid var(--line2); background: var(--card); cursor: pointer; }
+.act .ic { grid-row: 1 / 3; width: 1.7em; height: 1.7em; color: var(--accent); }
+.act b { font-size: 1rem; line-height: 1.15; }
+.act small { font-size: .78rem; color: var(--muted); line-height: 1.25; }
+.act .chance { position: absolute; top: 6px; right: 8px; font-size: .78rem; font-weight: 700; color: var(--text); background: var(--card2); border-radius: 8px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
+.act.best { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); background: linear-gradient(180deg, var(--card), var(--card2)); }
+.act.best::after { content: "Best move"; position: absolute; bottom: -9px; left: 12px; font-size: .68rem; font-weight: 700; background: var(--accent); color: var(--accent-ink); padding: 0 7px; border-radius: 6px; }
+.act:disabled { opacity: .5; cursor: not-allowed; }
+.act.wide { grid-column: 1 / -1; }
+.act.go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 4px 0 var(--accent-2); }
+.act.go .ic, .act.go small { color: var(--accent-ink); }
+.res h2 { font-size: 2rem; color: var(--accent); } .res h2.bad { color: var(--bad); }
+.gains { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.gains li { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.dsv { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .85rem; }
+.dsv i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; border: 2px solid var(--line2); }
+.dsv i.s { border-color: var(--good); color: var(--good); } .dsv i.f { border-color: var(--bad); color: var(--bad); } .dsv i.n20 { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* nav */
+nav.tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--bg2); border-top: 1px solid var(--line); }
+nav.tabs button { background: none; border: 0; min-height: 60px; cursor: pointer; color: var(--muted); font-size: .8rem; font-weight: 700; display: grid; justify-items: center; align-content: center; gap: 2px; position: relative; }
+nav.tabs button.on { color: var(--accent); }
+nav.tabs button.on::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+nav.tabs .dot { position: absolute; top: 8px; right: calc(50% - 18px); min-width: 18px; height: 18px; border-radius: 9px; background: var(--bad); color: #fff; font-size: .68rem; display: grid; place-items: center; padding: 0 4px; }
+
+/* views */
+.view { overflow-y: auto; padding-block: 14px 20px; display: grid; gap: 14px; align-content: start; }
+.view h2 { font-size: 1.6rem; }
+.sub { font-size: .88rem; color: var(--muted); }
+.warnbox { display: flex; gap: 10px; align-items: flex-start; background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: .92rem; }
+.grid { display: grid; gap: 6px; padding: 10px; border-radius: 16px; background: radial-gradient(ellipse at 50% 40%, #5a1626, #3b0c19 75%); border: 2px solid #7a1f35; }
+.cell { aspect-ratio: 1; border-radius: 10px; border: 1.5px dashed rgba(234,92,125,.3); background: rgba(0,0,0,.18); display: grid; place-items: center; align-content: center; gap: 2px; padding: 4px; text-align: center; color: #f4ede2; cursor: pointer; position: relative; min-width: 0; }
+.cell.it { border: 2px solid var(--rc); background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,.15)), #2f283b; }
+.cell .ic { width: 1.6em; height: 1.6em; color: var(--rc); }
+.cell span { font-size: .66rem; line-height: 1.1; font-weight: 700; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.cell .flag { position: absolute; top: -7px; left: 50%; transform: translateX(-50%); font-size: .58rem; font-weight: 700; padding: 0 5px; border-radius: 5px; background: #f0c15c; color: #1b1206; white-space: nowrap; }
+.cell .flag.att { background: #c79bff; }
+.cell .flag.cur { background: #ff8a7d; }
+.r-common { --rc: #b9b2a3; } .r-uncommon { --rc: #7ddc87; } .r-rare { --rc: #7fb6ff; }
+.list { display: grid; gap: 8px; }
+.li { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .92rem; }
+.li .ic { color: var(--accent); }
+.li b { display: block; }
+.li.off { opacity: .5; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: .95rem; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.abil { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.abil div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid; }
+.abil small { font-size: .75rem; color: var(--muted); }
+.abil b { font-family: var(--f-d); font-size: 1.6rem; line-height: 1; }
+.erow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+.erow b { font-size: .92rem; } .erow small { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
+.erow .n { font-size: .82rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.erow.on { border-color: var(--accent); } .erow.on .n { color: var(--accent); }
+
+/* sheets */
+.ov { position: fixed; inset: 0; z-index: 20; background: rgba(10,8,14,.6); display: grid; align-items: end; justify-items: center; }
+.sheet { width: min(540px, 100%); max-height: 90%; overflow-y: auto; background: var(--bg); border-radius: 20px 20px 0 0; padding-block: 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 12px; animation: up .25s cubic-bezier(.2,1,.4,1); }
+@keyframes up { from { transform: translateY(40px); } }
+.sheet h2 { font-size: 1.7rem; }
+.opts { display: grid; gap: 8px; }
+.opt { display: flex; gap: 12px; align-items: center; text-align: left; min-height: 64px; padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--line2); background: var(--card); cursor: pointer; }
+.opt .ic { color: var(--accent); width: 1.6em; height: 1.6em; }
+.opt b { display: block; font-size: 1rem; } .opt small { display: block; font-size: .82rem; color: var(--muted); }
+.opt.on { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.opt:disabled { opacity: .5; cursor: not-allowed; }
+.opt.danger { border-color: var(--bad); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; background: var(--card2); border-radius: 12px; padding: 4px; }
+.seg button { min-height: 48px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font-weight: 700; font-size: .9rem; }
+.seg button.on { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.2); color: var(--accent); }
+.setrow { display: grid; gap: 6px; }
+.setrow > b { font-size: .95rem; }
+.inp { width: 100%; font: inherit; font-size: 1.2rem; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line2); background: var(--card); color: var(--text); }
+.title-art { display: grid; justify-items: center; background: linear-gradient(180deg, var(--scene), var(--scene-2)); border-radius: 16px; padding: 14px 0 6px; }
+.title-art .mimic { position: relative; left: auto; bottom: auto; transform: none; width: 150px; }
+.big-t { font-family: var(--f-d); font-weight: 800; font-size: 2.3rem; line-height: .95; text-align: center; color: #f0c15c; padding: 6px 0 4px; }
+:root.calm *, :root.calm *::before, :root.calm *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+@media (max-height: 660px) { .scene { height: 140px; } .act { min-height: 64px; } }
+:root.big .where small { display: none; } @media (max-height: 700px) { .where small { display: none; } }
+
+/* ===== Layouts ===== */
+main { position: relative; }
+.hdr { flex: none; }
+.handle { display: none; }
+.tstrip { display: flex; gap: 6px; flex-wrap: wrap; }
+.tchip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 12px; border-radius: 22px; border: 1px solid var(--line2); background: var(--card); cursor: pointer; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tchip .ic { color: var(--muted); }
+.tchip.warn { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+
+/* One screen: the scene absorbs spare height; controls keep their natural size; only list screens scroll */
+.lay-fit main { display: flex; flex-direction: column; overflow: hidden; }
+.lay-fit .scene { flex: 1 1 0; height: auto; min-height: 110px; }
+.lay-fit main .panel { flex: 0 1 auto; min-height: 0; overflow-y: auto; gap: 10px; padding-block: 10px 12px; }
+.lay-fit .view { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.lay-fit .recent { display: none; }
+.lay-fit .why li:nth-child(n+4) { display: none; }
+.lay-fit .sysbox { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lay-fit .res .sysbox { -webkit-line-clamp: 3; }
+.lay-fit .act.wide { min-height: 52px; }
+.lay-fit .ring { width: 64px; height: 64px; }
+
+/* Scrolling page: one scroller for everything; stats pinned */
+.lay-scroll main { display: block; overflow-y: auto; }
+.lay-scroll .hdr { position: sticky; top: 0; z-index: 6; }
+.lay-scroll .scene { height: clamp(180px, 34vh, 280px); }
+.lay-scroll main .panel, .lay-scroll .view { overflow: visible; max-height: none; }
+
+/* Drawer: scene fills the screen; controls live in a pull-up panel */
+.lay-drawer main.list-on { display: flex; flex-direction: column; overflow: hidden; }
+.lay-drawer main.list-on .view { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.lay-drawer main.stage-on { overflow: hidden; display: block; }
+.lay-drawer main.stage-on .hdr { position: absolute; inset: 0 0 auto; z-index: 4; background: color-mix(in srgb, var(--bg2) 86%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 0; }
+.lay-drawer main.stage-on .scene { position: absolute; inset: 0; height: auto; }
+.lay-drawer main.stage-on .scene .where { top: calc(var(--hh, 130px) + 8px); }
+.lay-drawer main.stage-on .scene .qbadge { top: calc(var(--hh, 130px) + 10px); }
+.lay-drawer main { --dsz: var(--dh, calc((100% - var(--hh, 130px)) * var(--df, .62))); }
+.lay-drawer .scene .mimic { bottom: calc(var(--dsz) + 3%); height: auto; width: min(40%, 200px); aspect-ratio: auto; transition: bottom .25s; }
+.lay-drawer .scene .tok { bottom: calc(var(--dsz) + 4%); transition: bottom .25s; }
+.lay-drawer main.stage-on .panel { position: absolute; left: 0; right: 0; bottom: 0; height: var(--dsz); max-height: none; overflow: hidden; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 28px rgba(0,0,0,.35); padding-top: 0; transition: height .25s cubic-bezier(.2,1,.4,1); z-index: 3; }
+.lay-drawer main.stage-on.full .panel { overflow-y: auto; }
+.lay-drawer main.dragging .panel, .lay-drawer main.dragging .mimic, .lay-drawer main.dragging .tok { transition: none; }
+.lay-drawer .handle { display: grid; place-items: center; position: sticky; top: 0; z-index: 2; height: 30px; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); width: auto; border: 0; background: var(--bg); cursor: grab; touch-action: none; }
+.lay-drawer .handle i { width: 46px; height: 5px; border-radius: 3px; background: var(--line2); }
+.lay-drawer main.stage-on:not(.full) .panel::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
+@media (max-height: 720px) {
+  .lay-fit .hdr { padding-block: 6px 6px; gap: 6px; }
+  .lay-fit .hrow .nm { font-size: 1.1rem; } .lay-fit .hrow .tier { font-size: .78rem; } .lay-fit .iconbtn { width: 44px; height: 44px; }
+  .lay-fit .stat { padding: 4px 7px; gap: 2px; } .lay-fit .stat .t { font-size: .7rem; } .lay-fit .stat b { font-size: .88rem; }
+  .lay-fit .scene { min-height: 80px; }
+  .lay-fit .vcard { padding: 8px 10px; gap: 5px; } .lay-fit .vhead .meta { display: none; } .lay-fit .vhead h2 { font-size: 1.2rem; }
+  .lay-fit .event { font-size: .95rem; } .lay-fit .roll + .roll { display: none; }
+  .lay-fit .act { min-height: 56px; padding: 7px 10px; } .lay-fit .act small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lay-fit .big-btn { min-height: 56px; font-size: 1.25rem; } .lay-fit .tile { min-height: 70px; }
+  .lay-fit .ring { width: 54px; height: 54px; } .lay-fit .ring b { font-size: 1rem; } .lay-fit .why { font-size: .8rem; }
+  .lay-fit .odds { gap: 8px; } .lay-fit .card { padding: 9px 10px; gap: 7px; }
+}
+
+.oddsh { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mini { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 4px 10px; border-radius: 18px; border: 1px solid var(--line2); background: var(--card2); cursor: pointer; font-size: .8rem; font-weight: 700; }
+.lay-fit .act.wide[data-s="disguise"] { display: none; }
+.lay-scroll .mini, .lay-drawer .mini { display: none; }
+:root.big.lay-fit .scene { min-height: 56px; }
+:root.big.lay-fit .vhead .meta, :root.big.lay-fit .roll + .roll { display: none; }
+:root.big.lay-fit .act { min-height: 56px; padding: 7px 10px; }
+:root.big.lay-fit .act small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root.big.lay-fit .hdr { padding-block: 6px; gap: 6px; }
+:root.big.lay-fit .stat .meter { display: none; }
+
+.act b { padding-right: 46px; }
+.tchip .tcl { font-weight: 400; color: var(--muted); font-size: .85em; }
+
+/* ===== Mobile fixes ===== */
+:root { --fs: 16px; }
+:root.big { --fs: 19px; }
+.hdr { padding-block: 8px 8px; gap: 7px; }
+.hrow .nm { font-size: 1.25rem; }
+.hrow .nm .lv { font-family: var(--f-b); font-size: .75rem; font-weight: 700; color: var(--accent); vertical-align: 2px; }
+.hrow .tier { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.iconbtn { width: 44px; height: 44px; }
+.stats, :root.big .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.stat { padding: 5px 7px 6px; gap: 4px; border-radius: 9px; }
+.stat .sv { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.stat .sv b { color: var(--text); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.stat .meter { height: 5px; }
+:root.big .stat .sv .ic { display: none; }
+.scene { container-type: size; }
+.mimic, .lay-fit .mimic { height: 74%; max-width: 52%; left: 50%; }
+.scene.enc .mimic { left: 33%; }
+.tok { right: 9%; bottom: 8%; }
+.tok .disc, .tok.sz-T .disc, .tok.sz-S .disc, .tok.sz-M .disc, .tok.sz-L .disc { width: min(var(--ts), 46cqh); height: min(var(--ts), 46cqh); font-size: min(calc(var(--ts) * .34), 15cqh); }
+.tok.sz-T { --ts: 42px; } .tok.sz-S { --ts: 54px; } .tok.sz-M { --ts: 64px; } .tok.sz-L { --ts: 80px; }
+.tok .lab { font-size: .68rem; }
+.qbadge { top: 8px; }
+.panel { display: flex; flex-direction: column; }
+.panel > * { flex-shrink: 0; }
+.act b { padding-right: 0; }
+.act.hasc b { padding-right: 46px; }
+.act small { display: block; }
+.tiles { gap: 6px; }
+.tile { min-height: 64px; padding: 6px 4px; gap: 2px; }
+.tile .ic { width: 1.35em; height: 1.35em; }
+.tile b { font-size: .86rem; } .tile small { font-size: .7rem; }
+.tstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.tchip { min-height: 46px; padding: 5px 8px; border-radius: 12px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center; text-align: left; }
+.tchip .ic { grid-row: 1 / 3; }
+.tchip .tcl { font-size: .7rem; line-height: 1.1; }
+.tchip span[data-tid] { font-size: .95rem; line-height: 1.1; }
+.big-btn { min-height: 58px; font-size: 1.3rem; }
+.lay-fit .scene { min-height: 96px; }
+@media (max-height: 760px) {
+  .lay-fit .scene { min-height: 84px; }
+  .lay-fit .vcard { padding: 8px 10px; gap: 5px; } .lay-fit .vhead .meta { display: none; } .lay-fit .vhead h2 { font-size: 1.2rem; }
+  .lay-fit .event { font-size: .95rem; } .lay-fit .roll + .roll { display: none; }
+  .lay-fit .act { min-height: 54px; padding: 7px 10px; } .lay-fit .act small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lay-fit .ring { width: 54px; height: 54px; } .lay-fit .ring b { font-size: 1rem; } .lay-fit .why { font-size: .8rem; }
+  .lay-fit .card { padding: 9px 10px; gap: 7px; } .lay-fit main .panel { gap: 8px; padding-block: 8px 10px; }
+  .lay-fit .res h2 { font-size: 1.6rem; }
+}
+.stats, :root.big .stats { grid-template-columns: 1.1fr .95fr .8fr 1.25fr; }
+.stat .sv b { font-size: .82rem; letter-spacing: -.01em; }
+.tok .lab { white-space: normal; max-width: 92px; text-align: center; line-height: 1.15; padding: 2px 7px; }
+.tok { right: max(8%, 24px); }
+.tok { justify-items: end; } .tok .lab { text-align: right; }
+
+/* ===== Pocket: nothing scrolls, ever. Lists become pages. ===== */
+html, body, #app, main, .panel, .view, .sheet, .sh-b { overflow: hidden !important; }
+main .panel { overflow: hidden !important; }
+.view { display: flex; flex-direction: column; gap: 10px; padding-block: 12px 12px; min-height: 0; flex: 1 1 auto; }
+.view > * { flex-shrink: 0; }
+.vh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.vh h2 { font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vh .sub { white-space: nowrap; }
+.vbody { flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.vbody > * { flex-shrink: 0; }
+.pg { flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; }
+.pg.tall .pi { height: 5.6rem; }
+.pg-items { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-auto-rows: max-content; align-content: start; gap: 8px; }
+.pg-items.pg-grid { grid-template-columns: 1fr 1fr; }
+.pg-items.pg-grid .act { height: 76px; min-height: 0; }
+.pgnav { flex: none; display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 8px; }
+.pgnav.off { visibility: hidden; }
+.pgb { width: 52px; height: 48px; border-radius: 12px; border: 1.5px solid var(--line2); background: var(--card); display: grid; place-items: center; cursor: pointer; color: var(--accent); }
+.pgb:disabled { opacity: .35; cursor: not-allowed; }
+.pgn { font-weight: 700; font-size: .9rem; min-width: 7em; text-align: center; font-variant-numeric: tabular-nums; }
+.pi { height: 4.1rem; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); text-align: left; overflow: hidden; width: 100%; }
+button.pi { cursor: pointer; border-color: var(--line2); }
+button.pi:disabled { opacity: .45; cursor: not-allowed; }
+.pi .ic { color: var(--accent); width: 1.5em; height: 1.5em; }
+.pi > span { min-width: 0; flex: 1; display: grid; gap: 1px; }
+.pi b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pi small { font-size: .78rem; color: var(--muted); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pg.tall .pi small { -webkit-line-clamp: 3; }
+.pi em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--card2); border-radius: 8px; padding: 3px 8px; }
+.pi.on { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.pi.off { opacity: .55; }
+.pi.danger { border-color: var(--bad); } .pi.danger .ic { color: var(--bad); }
+.pi.log { height: 4.6rem; background: var(--parch); color: var(--parch-ink); border-color: var(--parch-line); font-family: var(--f-m); font-size: .8rem; line-height: 1.35; align-items: flex-start; }
+.pi.log span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pi.log.bad { background: #f6d7cc; }
+.strip { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-size: .88rem; width: 100%; text-align: left; }
+.strip span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip b { font-variant-numeric: tabular-nums; }
+.strip.warn { background: var(--warn-bg); color: var(--warn); border-color: currentColor; cursor: pointer; }
+.gridwrap { flex: 1 1 auto !important; min-height: 0; container-type: size; display: grid; place-items: center; }
+.gridwrap .grid { width: min(100cqw, calc(var(--cols) * ((100cqh - 20px - (var(--rows) - 1) * 6px) / var(--rows)) + 20px + (var(--cols) - 1) * 6px)); grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.abil { flex-shrink: 0; }
+.abil div { padding: 6px 8px; }
+.abil b { font-size: 1.35rem; }
+.kv { font-size: .9rem; gap: 4px 12px; }
+.seg button { min-height: 44px; }
+.sheet { height: 100%; max-height: 100%; border-radius: 0; display: flex; flex-direction: column; gap: 10px; padding-block: 14px 14px; animation: none; }
+.ov { align-items: stretch; background: var(--bg); }
+.sh-h { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sh-h h2 { font-size: 1.45rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-b { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.sh-b > * { flex-shrink: 0; }
+.sh-f { flex: none; display: grid; gap: 8px; }
+.desc { font-size: .92rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.setrow { display: grid; gap: 4px; }
+.big-btn.danger { background: var(--bad); box-shadow: 0 4px 0 #6d1712; color: #fff; }
+.sh-b.intro { justify-content: center; }
+.title-art { flex-shrink: 1 !important; min-height: 0; }
+.title-art .mimic { width: auto; height: min(22vh, 150px); aspect-ratio: 200 / 170; max-width: none; }
+.title-art.sm .mimic { height: min(14vh, 110px); }
+.big-t { font-size: 2rem; }
+.tchip span:last-child { font-size: .95rem; font-weight: 700; }
+.kv2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.kv2 div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 5px 8px; display: grid; min-width: 0; }
+.kv2 small { font-size: .72rem; color: var(--muted); }
+.kv2 b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats, :root.big .stats { grid-template-columns: 1.15fr 1fr 1fr 1.2fr; }
+.cell span { overflow-wrap: normal; word-break: normal; hyphens: auto; font-size: .62rem; }
+@media (max-width: 379px) { .stat .sv .ic { display: none; } .stat { padding-inline: 6px; } }
+
+/* ===== Phone fixes: wrap, don't cut ===== */
+.pi { height: auto !important; min-height: 3.6rem; align-items: center; }
+.pi b { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; }
+.pi small { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.pi.log { height: auto !important; }
+.pi.log span { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.pg-items { grid-auto-rows: auto; }
+.pg-items.pg-grid .act { height: auto; min-height: 72px; }
+.slist { flex: 1 1 auto; min-height: 0; overflow-y: auto !important; display: grid; align-content: start; gap: 8px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.act small, .lay-fit .act small, :root.big.lay-fit .act small { white-space: normal !important; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.act b { line-height: 1.15; }
+.strip span { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }
+.desc { -webkit-line-clamp: unset; display: block; overflow: visible; }
+.stat { gap: 2px; padding: 4px 7px 5px; }
+.stat .sl { display: flex; align-items: center; gap: 3px; font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.stat .sl .ic { width: 1.05em; height: 1.05em; }
+.stat .sv .ic { display: none !important; }
+.stat .sv b { font-size: .9rem; }
+@media (max-width: 379px) { .stat .sl .ic { display: none; } }
+.oddsh { flex-wrap: nowrap; }
+.oddsh b { min-width: 0; line-height: 1.2; }
+.oddsh .mini { flex: none; }
+.odds > div { min-width: 0; }
+.sysbox, .lay-fit .sysbox, .lay-fit .res .sysbox { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.pg-items { overflow-y: auto !important; overscroll-behavior: contain; }
+.cell span { -webkit-line-clamp: 2; font-size: .64rem; }
+
+/* ===== App build additions ===== */
+.cell.target { border-style: solid; border-color: var(--accent); background: rgba(240,193,92,.12); cursor: pointer; }
+.cell.moving { outline: 3px solid #f0c15c; outline-offset: 1px; }
+.linkbtn { background: none; border: 0; color: var(--accent); font-weight: 700; text-decoration: underline; min-height: 44px; cursor: pointer; }
+textarea.code { flex: 1 1 auto !important; min-height: 120px; font-family: var(--f-m); font-size: .72rem; line-height: 1.35; resize: none; word-break: break-all; }
+.sub.bad { color: var(--bad); }
+.big-btn:disabled { background: var(--card2); color: var(--muted); box-shadow: none; opacity: 1; }
+.big-btn:disabled .ic { color: var(--belly); }
+
+</style>
+<div id="app"></div>
+<script>
+// ===== Contents May Vary — rules and data (no DOM) =====
+'use strict';
+const VERSION = 1;
+let RNG = Math.random;
+const rnd = () => RNG();
+const ri = n => Math.floor(rnd() * n);
+const pick = a => a[ri(a.length)];
+function wpick(items, ws) { let t = 0; ws.forEach(w => t += w); let x = rnd() * t; for (let i = 0; i < items.length; i++) { x -= ws[i]; if (x <= 0) return items[i]; } return items[items.length - 1]; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const die = n => 1 + ri(n);
+function parseExpr(e) { const m = String(e).match(/^(\d+)d(\d+)([+-]\d+)?$/); return m ? { n: +m[1], s: +m[2], b: +(m[3] || 0) } : { n: 0, s: 0, b: +e || 0 }; }
+function roll(e, crit) { const p = parseExpr(e); let t = p.b; const n = crit ? p.n * 2 : p.n; for (let i = 0; i < n; i++) t += die(p.s); return Math.max(0, t); }
+function avg(e) { const p = parseExpr(e); return p.n * (p.s + 1) / 2 + p.b; }
+// mode: >0 advantage, <0 disadvantage
+function d20(mode) { const a = die(20), b = die(20); if (mode > 0) return { r: Math.max(a, b), a, b, mode: 1 }; if (mode < 0) return { r: Math.min(a, b), a, b, mode: -1 }; return { r: a, a, mode: 0 }; }
+const sgn = n => (n >= 0 ? '+' : '−') + Math.abs(n);
+
+// ---------- Core tables ----------
+const ABILS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+const ABIL_NAME = { STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution', INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma' };
+const ABIL_USE = { STR: 'Bite, grapple, swallow DC', DEX: 'Stealth disguises, initiative', CON: 'Hit points, belly, acid', INT: 'Spotting fakes, item use', WIS: 'Insight into visitors', CHA: 'Deception disguises, lures' };
+const SIZES = { T: { n: 0, name: 'Tiny', belly: 1 }, S: { n: 1, name: 'Small', belly: 2 }, M: { n: 2, name: 'Medium', belly: 4 }, L: { n: 3, name: 'Large', belly: 8 } };
+const SIZE_BY_N = ['T', 'S', 'M', 'L'];
+const CR_XP = { '0': 10, '1/8': 25, '1/4': 50, '1/2': 100, '1': 200, '2': 450, '3': 700 };
+const XP_AT = [0, 0, 80, 300, 900, 2200, 4500, 8000, 13500, 21500, 32000]; // total XP to reach level n
+const MAX_LVL = 10;
+const profFor = l => 2 + Math.floor((l - 1) / 4);
+const ASI_LVLS = [4, 8];
+
+const TYPES = ['beast', 'humanoid', 'undead', 'fiend', 'celestial', 'construct', 'dragon', 'fey', 'elemental', 'giant', 'ooze', 'plant', 'aberration', 'monstrosity'];
+const TYPE_NAME = { beast: 'Beast', humanoid: 'Humanoid', undead: 'Undead', fiend: 'Fiend', celestial: 'Celestial', construct: 'Construct', dragon: 'Dragon', fey: 'Fey', elemental: 'Elemental', giant: 'Giant', ooze: 'Ooze', plant: 'Plant', aberration: 'Aberration', monstrosity: 'Monstrosity' };
+const SPEAKERS = ['humanoid', 'fiend', 'celestial', 'dragon', 'fey'];
+const ESS_AT = [3, 8];
+const ESSENCE = {
+  beast: { name: 'Feral Bite', i: '+1 bite damage and +1 initiative.', ii: '+2 bite damage and +2 initiative.' },
+  humanoid: { name: 'Learned Tongue', i: 'You can Sweet Talk visitors who speak (+3 to the lure).', ii: 'Sweet Talk gives +5, and your Charisma rises by 2.' },
+  undead: { name: 'Grave Gut', i: 'Swallowed visitors take an extra 1d4 necrotic each turn.', ii: 'Swallowed visitors take an extra 1d8 necrotic each turn. You learn the Coffin form.' },
+  fiend: { name: 'Hellfire Belly', i: 'You can breathe fire: 2d6, Dexterity save for half, recharge 5–6.', ii: 'Your fire breath deals 3d6.' },
+  celestial: { name: 'Blessed Hinges', i: 'Heal 1d4 at the start of each of your turns in a fight.', ii: 'Heal 1d8 at the start of each of your turns in a fight.' },
+  construct: { name: 'Clockwork Jaw', i: '+1 AC, and your bite crits on 19–20.', ii: '+2 AC, and your bite crits on 18–20.' },
+  dragon: { name: 'Hoard Sense', i: "You see a visitor's loot before you lure them, and gold bait is +1.", ii: 'Gold bait is +2.' },
+  fey: { name: 'Glamour Lid', i: '+2 to every disguise.', ii: 'Advantage on every disguise roll.' },
+  elemental: { name: 'Elemental Core', i: 'You take half damage from fire.', ii: 'You take half damage from fire and acid, and your bite deals +1d4 fire.' },
+  giant: { name: 'Colossal Lid', i: '+5 max HP and +2 belly.', ii: '+12 max HP and +4 belly.' },
+  ooze: { name: 'Acid Lining', i: 'Your acid deals +1d6, and you digest items twice as fast.', ii: 'Your acid deals +2d6, and you digest items three times as fast.' },
+  plant: { name: 'Root Tongue', i: '+2 to Tongue Lash, and advantage on bites against visitors who flee.', ii: '+4 to Tongue Lash, and +2 to your escape DC.' },
+  aberration: { name: 'Many-Mouthed', i: 'A second mouth bites for 1d4 every turn.', ii: 'The second mouth bites for 1d8.' },
+  monstrosity: { name: 'Apex Predator', i: 'Your bites deal +1d6 to visitors below half HP.', ii: 'Your bites deal +2d6 to visitors below half HP.' },
+};
+
+// ---------- Evolution ----------
+const TIERS = {
+  lesser: { name: 'Lesser Mimic', size: 'S', swallow: 0, grid: [3, 3], ac: 12, acid: '1d6', belly: 0, desc: 'A small, hungry box. You can swallow Tiny creatures.' },
+  chest: { name: 'Chest Mimic', size: 'M', swallow: 1, grid: [4, 4], ac: 13, acid: '2d6', belly: 2, desc: 'A proper chest. You can swallow Small creatures, and you learn the Barrel form.' },
+  vault: { name: 'Vault Mimic', size: 'L', swallow: 2, grid: [5, 4], ac: 16, acid: '3d6', belly: 4, branch: true, desc: 'Armoured and patient. AC 16, +2 HP per level, and your grip is +3 harder to escape.' },
+  wardrobe: { name: 'Wardrobe Mimic', size: 'L', swallow: 2, grid: [5, 4], ac: 14, acid: '3d6', belly: 4, branch: true, desc: 'A shapeshifter. +2 to every disguise, Play Dead has advantage, and you learn the Wardrobe and Coffin forms.' },
+  doorway: { name: 'Doorway Mimic', size: 'L', swallow: 2, grid: [5, 4], ac: 14, acid: '3d6', belly: 4, branch: true, desc: 'A door that goes one way. Once per fight, swallow without grappling first. You learn the Door form, and moving costs nothing.' },
+  barrel: { name: 'Barrel Mimic', size: 'L', swallow: 2, grid: [5, 4], ac: 14, acid: '3d6', belly: 4, branch: true, desc: 'A chaser. Bite twice per action, and visitors who flee must escape your grip to get away.' },
+};
+const BRANCHES = ['vault', 'wardrobe', 'doorway', 'barrel'];
+
+// ---------- Forms ----------
+const FORMS = {
+  chest: { name: 'Treasure Chest', skill: 'Deception', bonus: 2, attract: ['gold'], note: 'Everybody loves a large chest. Thieves look closer.' },
+  barrel: { name: 'Barrel', skill: 'Stealth', bonus: 2, attract: ['food', 'rest'], note: 'Nobody suspects a barrel. Nobody.' },
+  bookshelf: { name: 'Bookshelf', skill: 'Deception', bonus: 3, attract: ['knowledge', 'magic'], note: 'Scholars reach in. Scholars do not reach out.' },
+  door: { name: 'Door', skill: 'Stealth', bonus: 4, attract: ['travel', 'curiosity'], note: 'Everyone has to go through a door eventually.' },
+  wardrobe: { name: 'Wardrobe', skill: 'Deception', bonus: 3, attract: ['curiosity', 'rest'], note: 'Step inside. There is definitely another world in here.' },
+  coffin: { name: 'Coffin', skill: 'Stealth', bonus: 3, attract: ['holy', 'gold'], note: 'Grave robbers, priests and necromancers all want to look inside.' },
+};
+const WANTS = { gold: 'Treasure', magic: 'Magic', knowledge: 'Knowledge', food: 'Food', rest: 'Rest', holy: 'Holy things', travel: 'A way through', curiosity: 'Curiosity' };
+const TAG_WANT = { gold: 'gold', dragon: 'gold', arcane: 'magic', paper: 'knowledge', food: 'food', holy: 'holy', music: 'curiosity', cloth: 'rest', blade: 'gold', potion: 'magic' };
+
+// ---------- Items ----------
+const RARITY = ['common', 'uncommon', 'rare'];
+const DIGEST_MIN = { common: 2, uncommon: 6, rare: 15 };
+const ITEMS = {
+  copper: { name: 'Copper Coins', tags: ['gold'], r: 'common', fuse: 'silver', bait: 1, desc: 'Bait +1 for anyone who wants treasure.' },
+  silver: { name: 'Silver Hoard', tags: ['gold'], r: 'uncommon', fuse: 'goldhoard', bait: 2, desc: 'Bait +2 for anyone who wants treasure.' },
+  goldhoard: { name: 'Gold Hoard', tags: ['gold', 'dragon'], r: 'rare', bait: 4, desc: 'Bait +4. Dragons can smell it from three floors away.' },
+  gold_ring: { name: 'Gold Ring', tags: ['gold'], r: 'uncommon', bait: 2, desc: 'Bait +2. Shiny, small, irresistible.' },
+  rusty_dagger: { name: 'Rusty Dagger', tags: ['blade', 'metal'], r: 'common', weapon: '1d4', fuse: 'gut_blade', desc: 'Tongue-wield it: 1d4. +1 damage for each adjacent blade.' },
+  gut_blade: { name: 'Gut-Forged Blade', tags: ['blade', 'metal'], r: 'uncommon', weapon: '1d10', desc: 'Three daggers, one blade, forged by acid. 1d10.' },
+  shortsword: { name: 'Shortsword', tags: ['blade', 'metal'], r: 'common', weapon: '1d6', desc: 'Tongue-wield it: 1d6. +1 damage for each adjacent blade.' },
+  longsword: { name: 'Longsword', tags: ['blade', 'metal'], r: 'common', weapon: '1d8', desc: 'Tongue-wield it: 1d8. +1 damage for each adjacent blade.' },
+  big_club: { name: 'Ogre Club', tags: ['blunt'], r: 'common', weapon: '2d4', hit: -1, desc: 'Too big for you. You use it anyway. 2d4, −1 to hit.' },
+  mimic_tooth: { name: 'Rival Mimic Tooth', tags: ['blade', 'monstrosity'], r: 'rare', weapon: '1d12', desc: 'A tooth from your own kind. 1d12.' },
+  hesk_crowbar: { name: "Hesk's Crowbar", tags: ['blunt', 'metal'], r: 'rare', attune: true, weapon: '1d8+2', hit: 2, guard: 3, desc: 'Attuned: tongue-wield for 1d8+2 at +2, and investigators lose their advantage on you.' },
+  leather: { name: 'Leather Armour', tags: ['armor', 'cloth'], r: 'common', ac: 1, desc: '+1 AC. You wear it on the inside.' },
+  knight_plate: { name: "Knight's Plate", tags: ['armor', 'metal'], r: 'uncommon', ac: 3, clank: 2, desc: '+3 AC, but −2 to Stealth disguises. You clank.' },
+  bone: { name: 'Bone', tags: ['bone'], r: 'common', fuse: 'bone_cage', desc: '+1 AC for each pair of adjacent bones (up to +3).' },
+  bone_cage: { name: 'Bone Cage', tags: ['bone', 'armor'], r: 'uncommon', ac: 2, desc: '+2 AC. A ribcage inside a box.' },
+  rope: { name: 'Rope', tags: ['tool'], r: 'common', grip: 2, desc: '+2 to the DC to escape your grapple.' },
+  lockpicks: { name: 'Lockpicks', tags: ['tool'], r: 'common', guard: 3, desc: '+3 against Investigation. You know how they pick.' },
+  map_scrap: { name: 'Map Scrap', tags: ['paper'], r: 'common', fuse: 'treasure_map', desc: 'Part of a map. Three of them might make a whole one.' },
+  treasure_map: { name: 'Treasure Map', tags: ['paper'], r: 'uncommon', unlock: 'vault', desc: 'Shows the way to the Hidden Vault.' },
+  bread: { name: 'Stale Bread', tags: ['food'], r: 'common', use: 'eat', belly: 1, desc: 'Eat it: +1 belly.' },
+  glowcap: { name: 'Glowcap', tags: ['food', 'arcane'], r: 'common', use: 'eat', belly: 1, heal: '1d4', desc: 'Eat it: +1 belly and heal 1d4.' },
+  healing_potion: { name: 'Potion of Healing', tags: ['potion'], r: 'common', use: 'heal', heal: '2d4+2', desc: 'Drink it in a fight: heal 2d4+2.' },
+  spellbook: { name: 'Spellbook', tags: ['paper', 'arcane'], r: 'common', desc: 'Fire breath +1d6 if next to an Ember Wand. Digest it to learn the Bookshelf form.' },
+  ember_wand: { name: 'Ember Wand', tags: ['arcane', 'fire'], r: 'uncommon', attune: true, desc: 'Attuned: breathe fire for 2d6 (Dexterity save for half, recharge 5–6).' },
+  ember_core: { name: 'Ember Core', tags: ['fire', 'elemental'], r: 'common', desc: 'Fire breath +1d4 if next to an Ember Wand.' },
+  holy_symbol: { name: 'Holy Symbol', tags: ['holy'], r: 'common', desc: 'Bites deal +1d4 radiant to undead and fiends.' },
+  halo: { name: "Cherub's Halo", tags: ['holy'], r: 'uncommon', attune: true, desc: 'Attuned: +1 to saving throws and heal 1 at the start of each of your turns.' },
+  lute: { name: 'Lute', tags: ['music'], r: 'common', use: 'charm', desc: 'Play it in a fight (once): a Charisma check to charm the visitor for a turn.' },
+  pixie_dust: { name: 'Pixie Dust', tags: ['arcane'], r: 'common', use: 'blind', desc: 'Sneeze it in a fight: the visitor is blinded for 2 turns.' },
+  gear: { name: 'Clockwork Gear', tags: ['tool', 'construct'], r: 'common', init: 1, fuse: 'clockwork_jaw', desc: '+1 initiative. Ticks.' },
+  clockwork_jaw: { name: 'Clockwork Jaw', tags: ['construct', 'metal'], r: 'uncommon', extraBite: '1d4', desc: 'Your bites deal +1d4.' },
+  dragon_scale: { name: 'Dragon Scale', tags: ['dragon', 'armor'], r: 'uncommon', ac: 1, fireRes: true, desc: '+1 AC and half damage from fire.' },
+  contract: { name: 'Infernal Contract', tags: ['arcane', 'cursed'], r: 'uncommon', cursed: true, str: 2, cha: -1, desc: '+2 Strength, −1 Charisma. You have no hands. It still counts. Cursed: digest it to get rid of it.' },
+  bag: { name: 'Bag of Holding', tags: ['cloth', 'arcane'], r: 'rare', rows: 1, noDigest: true, desc: 'Your stomach gains a row. You are now bigger on the inside.' },
+  ring_prot: { name: 'Ring of Protection', tags: ['gold', 'arcane'], r: 'rare', attune: true, ac: 1, saves: 1, desc: 'Attuned: +1 AC and +1 to saving throws.' },
+  cloak: { name: 'Cloak of Elvenkind', tags: ['cloth', 'arcane'], r: 'uncommon', attune: true, stealth: 3, desc: 'Attuned: +3 to Stealth disguises.' },
+  salt: { name: "Hunter's Salt", tags: ['junk', 'cursed'], r: 'common', cursed: true, saltPen: true, desc: 'Your acid deals −1d6 while this is inside you. Cursed: digest it.' },
+  wet_sock: { name: 'Wet Sock', tags: ['junk'], r: 'common', desc: 'It does nothing. It has always done nothing.' },
+};
+const DIGEST_TAGS = {
+  blade: { name: 'Serrated Teeth', each: '+1 bite damage', max: 3 },
+  armor: { name: 'Thick Lid', each: '+1 AC', max: 2 },
+  bone: { name: 'Calcified Hinges', each: '+1 AC', max: 1 },
+  gold: { name: 'Gilded', each: '+1 to Deception disguises', max: 2 },
+  arcane: { name: 'Arcane Lining', each: '+1 breath damage and save DC', max: 2 },
+  holy: { name: 'Sanctified', each: '+1 to saving throws', max: 2 },
+  food: { name: 'Stretchy Gut', each: '+2 belly', max: 2 },
+  tool: { name: 'Strong Grip', each: '+1 to your escape DC', max: 2 },
+  paper: { name: 'Well Read', each: '+1 to Insight', max: 2 },
+  fire: { name: 'Ember Gut', each: '+1 fire damage on bites', max: 2 },
+  music: { name: 'Hums Along', each: '+1 to Deception disguises', max: 1 },
+  metal: { name: 'Iron Stomach', each: '+1 acid damage', max: 2 },
+  cloth: { name: 'Soft Lining', each: '+3 max HP', max: 2 },
+  potion: { name: 'Alchemical Gut', each: 'healing items heal +2', max: 1 },
+};
+
+// ---------- Visitors ----------
+const VISITORS = {};
+function V(id, name, type, size, cr, o) { VISITORS[id] = Object.assign({ id, name, type, size, cr, xp: CR_XP[cr], dex: 0, esc: 0, wis: 0, multi: 1, flee: 0.3, loot: [], wants: [], inv: null, specials: [] }, o); }
+V('rat', 'Cave Rat', 'beast', 'T', '0', { ac: 10, hp: 3, atk: ['Nibble', 2, '1d2'], pp: 10, wants: ['food'], flee: 0.6, line: 'A rat sniffs at your keyhole.', eat: 'Crunchy. Mostly tail.' });
+V('goblin', 'Goblin Scavenger', 'humanoid', 'S', '1/4', { ac: 13, hp: 7, atk: ['Shiv', 4, '1d6+2'], pp: 9, dex: 2, esc: 2, wants: ['gold', 'food'], loot: [['rusty_dagger', .5], ['copper', .5], ['bread', .3]], line: 'A goblin is muttering about "finders keepers".', eat: 'Finders keepers.' });
+V('kobold', 'Kobold Trapper', 'humanoid', 'S', '1/8', { ac: 12, hp: 5, atk: ['Dagger', 4, '1d4+2'], pp: 8, inv: 3, dex: 2, esc: 0, wants: ['gold'], loot: [['rope', .35], ['copper', .4], ['map_scrap', .35], ['rusty_dagger', .2]], line: 'A kobold taps the floor ahead with a stick. It knows traps.', eat: 'It knew traps. It did not know you.' });
+V('sprout', 'Mushroom Sprout', 'plant', 'S', '0', { ac: 10, hp: 4, atk: ['Bonk', 1, '1d4'], pp: 8, wants: ['rest'], flee: 0.2, loot: [['glowcap', .7]], line: 'A mushroom waddles in, looking for somewhere damp to sit.', eat: 'Earthy. A little spongy.' });
+V('recruit', 'Hopeful Recruit', 'humanoid', 'M', '1/4', { ac: 12, hp: 9, atk: ['Training Sword', 3, '1d6+1'], pp: 10, dex: 1, esc: 1, wants: ['gold', 'magic', 'travel'], loot: [['shortsword', .3], ['healing_potion', .4], ['copper', .5], ['wet_sock', .15]], line: 'A fresh recruit is trying to reach Level 5. They look at you with hope.', eat: 'They did not reach Level 5.' });
+V('pixie', 'Pixie', 'fey', 'T', '1/4', { ac: 15, hp: 3, atk: ['Pinch', 4, '1d2'], pp: 14, dex: 4, esc: 4, wants: ['magic', 'curiosity'], flee: 0.8, loot: [['pixie_dust', .7]], line: 'A pixie flits around you, giggling.', eat: 'Fizzy. Your teeth sparkle now.' });
+V('eye', 'Floating Eye', 'aberration', 'T', '1/8', { ac: 12, hp: 5, atk: ['Stare', 2, '1d4'], pp: 15, wants: ['curiosity'], flee: 0.4, line: 'Something that is mostly eye floats in.', eat: 'It watched the whole time.' });
+V('bandit', 'Bandit', 'humanoid', 'M', '1/8', { ac: 12, hp: 11, atk: ['Scimitar', 3, '1d6+1'], pp: 10, dex: 1, esc: 1, wants: ['gold'], loot: [['shortsword', .3], ['copper', .6], ['leather', .3], ['rusty_dagger', .3]], line: 'A bandit is counting what is left of their share.', eat: 'You took their share.' });
+V('skeleton', 'Skeleton', 'undead', 'M', '1/4', { ac: 13, hp: 13, atk: ['Rusty Blade', 4, '1d6+2'], pp: 9, dex: 2, esc: 0, wants: ['gold'], flee: 0, loot: [['bone', .8], ['bone', .4], ['shortsword', .25]], line: 'A skeleton rattles past. Old habits: it checks every chest.', eat: 'Calcium.' });
+V('thief', 'Halfling Thief', 'humanoid', 'S', '1/2', { ac: 14, hp: 13, atk: ['Short Blade', 4, '1d6+2'], pp: 13, inv: 5, chestAdv: true, dex: 4, esc: 3, wants: ['gold', 'magic'], flee: 0.4, loot: [['lockpicks', .4], ['copper', .6], ['gold_ring', .25], ['cloak', .1], ['map_scrap', .3]], line: 'A halfling thief cracks their knuckles. Chests are their speciality.', eat: 'Professional hazard.' });
+V('apprentice', 'Apprentice Wizard', 'humanoid', 'M', '1/4', { ac: 11, hp: 9, atk: ['Fire Bolt', 4, '1d10', 'fire'], pp: 10, inv: 4, wants: ['knowledge', 'magic'], loot: [['spellbook', .5], ['ember_wand', .2], ['pixie_dust', .2], ['glowcap', .2]], line: 'An apprentice wizard is looking for "primary sources".', eat: 'You absorbed some primary sources.' });
+V('acolyte', 'Acolyte', 'humanoid', 'M', '1/4', { ac: 10, hp: 9, atk: ['Mace', 2, '1d6'], pp: 12, wis: 2, wants: ['holy', 'rest'], heal: '1d8+2', specials: [{ n: 'Sacred Flame', chance: .5, save: 'DEX', dc: 12, dmg: '1d8', kind: 'radiant' }], loot: [['holy_symbol', .5], ['healing_potion', .5], ['bread', .3]], line: 'An acolyte murmurs a prayer for anyone lost down here.', eat: 'The prayer went unanswered.' });
+V('imp', 'Imp', 'fiend', 'T', '1', { ac: 13, hp: 10, atk: ['Sting', 5, '1d4+3'], pp: 11, dex: 3, esc: 3, wants: ['magic', 'curiosity'], flee: 0.5, invis: true, loot: [['contract', .35], ['ember_core', .3]], line: 'An imp lounges on the air, looking for a soul to bargain with.', eat: 'Spicy. Something just signed you up for a newsletter.' });
+V('darkmantle', 'Darkmantle', 'monstrosity', 'S', '1/2', { ac: 11, hp: 22, atk: ['Crush', 5, '1d6+3'], pp: 10, dex: 1, esc: 3, wants: ['food'], aggressive: true, flee: 0.2, specials: [{ n: 'Darkness', chance: .3, once: true, effect: 'dark' }], loot: [['bone', .3]], line: 'A darkmantle hangs from the ceiling. Another ambush predator. Awkward.', eat: 'Professional courtesy, briefly considered.' });
+V('ooze', 'Gray Ooze', 'ooze', 'M', '1/2', { ac: 8, hp: 22, atk: ['Pseudopod', 3, '2d6+1', 'acid'], pp: 8, dex: -2, esc: 1, wants: ['food'], aggressive: true, flee: 0, corrode: true, loot: [['wet_sock', .1]], line: 'A gray ooze slides along the floor, dissolving the grout.', eat: 'Eating a stomach is a strange experience.' });
+V('pseudo', 'Pseudodragon', 'dragon', 'T', '1/4', { ac: 13, hp: 7, atk: ['Bite', 4, '1d4+2'], pp: 13, dex: 2, esc: 2, wants: ['gold'], flee: 0.5, specials: [{ n: 'Sting', chance: .35, save: 'CON', dc: 11, dmg: '0', effect: 'poison' }], loot: [['dragon_scale', .35], ['copper', .4]], line: 'A pseudodragon circles you. It can smell treasure.', eat: 'Tastes like a very small dragon.' });
+V('clockwork', 'Clockwork Scout', 'construct', 'S', '1/4', { ac: 14, hp: 10, atk: ['Spring Blade', 4, '1d6+2'], pp: 12, dex: 2, esc: 1, wants: ['knowledge'], flee: 0, loot: [['gear', .7], ['gear', .3]], line: 'A clockwork scout is mapping the dungeon, one tick at a time.', eat: 'Crunchy. Your stomach now ticks.' });
+V('cherub', 'Lost Cherub', 'celestial', 'T', '1/2', { ac: 13, hp: 9, atk: ['Radiant Touch', 4, '1d6+2', 'radiant'], pp: 13, dex: 3, esc: 2, wis: 3, wants: ['holy'], flee: 0.5, loot: [['halo', .3], ['holy_symbol', .3]], line: 'A small, chubby angel is very lost.', eat: 'Angel food.' });
+V('mephit', 'Magma Mephit', 'elemental', 'S', '1/2', { ac: 11, hp: 22, atk: ['Claws', 3, '1d4+1', 'fire'], pp: 10, dex: 1, esc: 1, wants: ['magic'], specials: [{ n: 'Fire Breath', chance: .3, save: 'DEX', dc: 11, dmg: '2d6', kind: 'fire', half: true }], loot: [['ember_core', .6]], line: 'A magma mephit drips across the floor, humming.', eat: 'Hot. Very hot. Worth it.' });
+V('ogre', 'Ogre', 'giant', 'L', '2', { ac: 11, hp: 59, atk: ['Greatclub', 6, '2d8+4'], pp: 8, dex: -1, esc: 4, wants: ['food'], aggressive: true, flee: 0.15, loot: [['big_club', .6], ['copper', .6], ['copper', .6], ['bone', .5], ['bread', .5]], line: 'An ogre is looking for a snack. So are you.', eat: 'Far too big. That has never stopped you.' });
+V('knight', 'Knight', 'humanoid', 'M', '3', { ac: 18, hp: 52, atk: ['Greatsword', 5, '2d6+3'], multi: 2, pp: 10, dex: 0, esc: 3, wis: 2, wants: ['holy', 'gold', 'travel'], flee: 0.1, loot: [['knight_plate', .5], ['longsword', .6], ['ring_prot', .15], ['healing_potion', .5]], line: 'A knight in full plate is checking the corners. Thoroughly.', eat: 'Heavy metal.' });
+V('wolf', 'Wolf', 'beast', 'M', '1/4', { ac: 13, hp: 11, atk: ['Bite', 4, '2d4+2'], pp: 13, dex: 2, esc: 2, wants: ['food'], aggressive: true, flee: 0.3, loot: [['bone', .3]], line: 'A wolf has your scent. You do not have a scent. It has it anyway.', eat: 'Who is the big bad now.' });
+V('merchant', 'Travelling Merchant', 'humanoid', 'M', '0', { ac: 10, hp: 6, atk: ['Walking Stick', 2, '1d4'], pp: 11, inv: 2, wants: ['gold', 'travel'], flee: 0.7, loot: [['copper', .8], ['copper', .5], ['gold_ring', .3], ['bag', .08], ['bread', .4], ['map_scrap', .3]], line: 'A merchant is looking for somewhere to store their stock.', eat: 'No refunds.' });
+V('bard', 'Wandering Bard', 'humanoid', 'M', '1/4', { ac: 12, hp: 14, atk: ['Rapier', 4, '1d8+2'], pp: 11, dex: 2, esc: 2, wis: 1, wants: ['curiosity', 'rest'], specials: [{ n: 'Vicious Mockery', chance: .4, save: 'WIS', dc: 12, dmg: '1d4', kind: 'psychic', effect: 'mock' }], loot: [['lute', .6], ['copper', .5]], line: 'A bard is composing a ballad about a chest. Coincidence.', eat: 'The song, unfortunately, remains.' });
+V('hesk', 'Sister Hesk, Mimic Hunter', 'humanoid', 'M', '3', { ac: 15, hp: 45, atk: ['Crowbar', 5, '1d8+3'], multi: 2, pp: 14, inv: 5, alwaysAdv: true, dex: 2, esc: 3, wis: 3, wants: ['gold'], flee: 0, boss: true, specials: [{ n: 'Salt Bomb', chance: .35, save: 'DEX', dc: 13, dmg: '2d6', effect: 'salt' }], loot: [['hesk_crowbar', 1], ['healing_potion', 1]], line: 'A woman with a ten-foot pole and a bandolier of salt is poking every chest in the room. She is getting closer.', eat: 'The hunter is hunted.' });
+V('rival', 'Rival Mimic', 'monstrosity', 'M', '2', { ac: 12, hp: 58, atk: ['Bite', 5, '2d8+3'], pp: 12, dex: 1, esc: 3, wants: ['gold'], aggressive: true, rival: true, flee: 0, loot: [['mimic_tooth', 1], ['goldhoard', .3], ['gold_ring', .5]], line: 'Across the vault sits another chest. It is breathing.', eat: 'You are what you eat. Hm.' });
+
+// ---------- Regions ----------
+const REGIONS = {
+  f1: { name: 'The Gutter Halls', sub: 'Dungeon, floor 1', lvl: 1, special: ['map_scrap', 'glowcap'], known: 'map scraps for the Hidden Vault', w: { rat: 5, goblin: 4, kobold: 4, sprout: 3, recruit: 4, pixie: 2, eye: 2, bandit: 1 } },
+  f2: { name: 'The Bone Gallery', sub: 'Dungeon, floor 2', lvl: 2, special: ['spellbook', 'holy_symbol', 'ember_wand'], known: 'spellbooks, holy symbols and wands', w: { skeleton: 4, thief: 3, apprentice: 3, acolyte: 3, imp: 2, darkmantle: 2, ooze: 2, pseudo: 2, rat: 2, recruit: 2 } },
+  road: { name: 'The Forest Road', sub: 'Outside the dungeon', lvl: 3, tier: 'chest', special: ['gold_ring', 'lute', 'bag'], known: 'rings, lutes and the odd Bag of Holding', w: { wolf: 3, merchant: 4, bard: 3, bandit: 4, pixie: 2, recruit: 2, cherub: 1, knight: 1, thief: 2 } },
+  f3: { name: 'The Sunken Treasury', sub: 'Dungeon, floor 3', lvl: 4, special: ['knight_plate', 'ring_prot', 'silver'], known: 'plate armour, protective rings and silver', w: { knight: 2, mephit: 3, clockwork: 3, cherub: 2, ogre: 2, thief: 3, bandit: 2, apprentice: 2, skeleton: 2 } },
+  vault: { name: 'The Hidden Vault', sub: 'Behind the map', lvl: 1, secret: true, loot: 1.5, special: ['goldhoard', 'mimic_tooth'], known: 'gold hoards and a rival mimic', w: { rival: 2, pseudo: 3, mephit: 2, knight: 2, thief: 3, clockwork: 2, imp: 2 } },
+};
+const REGION_ORDER = ['f1', 'f2', 'road', 'f3', 'vault'];
+
+const FEATS = {
+  glutton: { name: 'Glutton', desc: '+4 belly, and you get hungry more slowly.' },
+  gilded: { name: 'Gilded Lid', desc: '+1 AC and +1 to every disguise.' },
+  silver: { name: 'Silver Tongue', desc: 'You can talk. Sweet Talk anyone who speaks (+3), and Insight always succeeds.' },
+  ironstomach: { name: 'Iron Stomach', desc: 'Half damage from acid and poison, and curses inside you do nothing.' },
+  patient: { name: 'Patient Predator', desc: 'While you are away you catch twice as often and keep more XP.' },
+  lockjaw: { name: 'Lockjaw', desc: '+3 to your escape DC, and advantage on bites against grappled visitors.' },
+};
+
+const TITLES = {
+  first_bite: { name: 'First Bite', desc: 'Eat your first visitor.' },
+  box_office: { name: 'Box Office Hit', desc: 'Eat 25 visitors.' },
+  off_key: { name: 'Off-Key', desc: 'Eat a bard.' },
+  angel_food: { name: 'Angel Food', desc: 'Eat a celestial.' },
+  heavy_metal: { name: 'Heavy Metal', desc: 'Swallow a knight whole.' },
+  hunter_hunted: { name: 'The Hunter Hunted', desc: 'Defeat Sister Hesk.' },
+  cannibal: { name: 'Professional Courtesy', desc: 'Eat another mimic.' },
+  trust_issues: { name: 'Trust Issues', desc: 'Eat the one person who trusted you.' },
+  whats_in: { name: "What's in the Box", desc: 'Survive your death saves.' },
+  splinters: { name: 'Splinters', desc: 'Shatter, and pull yourself back together.' },
+  gourmand: { name: 'Gourmand', desc: 'Get Gorged three times.' },
+  bigger: { name: 'Bigger on the Inside', desc: 'Swallow a Bag of Holding.' },
+  omnivore: { name: 'Omnivore', desc: 'Eat one of every creature type.' },
+};
+
+// ---------- State ----------
+let S = null;
+function newGame(name) {
+  const now = Date.now();
+  S = {
+    v: VERSION, name: name || 'Lid', born: now, lastSeen: now, lastTick: now,
+    lvl: 1, xp: 0, abil: { STR: 14, DEX: 12, CON: 14, INT: 8, WIS: 10, CHA: 13 },
+    tier: 'lesser', feats: [], pending: [],
+    hp: 0, belly: 3, bellyAcc: 0, notoriety: 0, notAcc: 0,
+    region: 'f1', form: 'chest', forms: ['chest'], bait: null, regions: ['f1'],
+    grid: new Array(9).fill(null), attuned: [], tray: [], uid: 1,
+    digest: null, essence: {}, dtraits: {},
+    titles: {}, kills: {}, eaten: 0, gorged: 0, wasGorged: false,
+    queue: [], log: [], companion: null, flags: {}, cracked: 0, lootCut: 0,
+    naps: 3, napAt: now, restAt: 0, enc: null, stats: { fights: 0, fled: 0, deaths: 0 },
+  };
+  TYPES.forEach(t => S.essence[t] = 0);
+  S.hp = maxHp();
+  // a starting bait so the first lure has something to glint with
+  const c = mkItem('copper'); S.grid[4] = c; S.bait = c.uid;
+  sys('[Object has achieved sentience. Species: Lesser Mimic. Level 1.]');
+  sys('[Congratulations. You are a box.]');
+  return S;
+}
+function mkItem(id) { return { id, uid: S.uid++ }; }
+function sys(text, cls) { S.log.unshift({ t: Date.now(), text, cls: cls || 'sys' }); if (S.log.length > 120) S.log.length = 120; }
+
+// ---------- Derived stats ----------
+const T = () => TIERS[S.tier];
+const gridCols = () => T().grid[0];
+const gridRows = () => T().grid[1] + bagRows();
+function bagRows() { return S.grid.some(c => c && c.id === 'bag') || S.flags.bag ? 1 : 0; }
+function cellCount() { return gridCols() * gridRows(); }
+function fitGrid() { const n = cellCount(); while (S.grid.length < n) S.grid.push(null); }
+function gridItems() { return S.grid.filter(Boolean); }
+function hasItem(id) { return S.grid.some(c => c && c.id === id); }
+function isAttuned(uid) { return S.attuned.includes(uid); }
+function activeItems() { return S.grid.filter(c => c && (!ITEMS[c.id].attune || isAttuned(c.uid))); }
+function activeHas(id) { return activeItems().some(c => c.id === id); }
+function feat(k) { return S.feats.includes(k); }
+function ess(t) { const n = S.essence[t] || 0; return n >= ESS_AT[1] ? 2 : n >= ESS_AT[0] ? 1 : 0; }
+function dt(tag) { return S.dtraits[tag] || 0; }
+function cursedOn() { return !feat('ironstomach'); }
+function score(k) {
+  let v = S.abil[k];
+  if (k === 'STR' && hasItem('contract')) v += 2;
+  if (k === 'CHA' && hasItem('contract') && cursedOn()) v -= 1;
+  if (k === 'CHA' && ess('humanoid') >= 2) v += 2;
+  return clamp(v, 1, 24);
+}
+const mod = k => Math.floor((score(k) - 10) / 2);
+const prof = () => profFor(S.lvl);
+function maxHp() {
+  const con = mod('CON'); let hp = 8 + con + (S.lvl - 1) * (5 + con);
+  if (S.tier === 'vault') hp += 2 * S.lvl;
+  hp += [0, 5, 12][ess('giant')] + 3 * dt('cloth');
+  return Math.max(4, hp);
+}
+function bellyCap() { return 4 + 2 * Math.max(0, mod('CON')) + T().belly + (feat('glutton') ? 4 : 0) + 2 * dt('food') + [0, 2, 4][ess('giant')]; }
+function gorged() { return S.belly >= bellyCap(); }
+function starving() { return S.belly <= 0; }
+function neighbours(i) { const c = gridCols(), out = []; const x = i % c, y = Math.floor(i / c); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy; if (nx >= 0 && nx < c && ny >= 0 && ny < gridRows()) out.push(ny * c + nx); }); return out; }
+function adjCount(i, pred) { return neighbours(i).filter(j => S.grid[j] && pred(ITEMS[S.grid[j].id], S.grid[j])).length; }
+function bonePairs() { let n = 0; S.grid.forEach((c, i) => { if (c && c.id === 'bone') neighbours(i).forEach(j => { if (j > i && S.grid[j] && S.grid[j].id === 'bone') n++; }); }); return Math.min(3, n); }
+function ac() {
+  let a = T().ac;
+  activeItems().forEach(c => { a += ITEMS[c.id].ac || 0; });
+  a += bonePairs() + dt('armor') + dt('bone') + [0, 1, 2][ess('construct')] + (feat('gilded') ? 1 : 0);
+  if (S.cracked > 0) a -= 2;
+  return a;
+}
+function saveBonus(k) { let b = mod(k) + dt('holy'); activeItems().forEach(c => b += ITEMS[c.id].saves || 0); return b; }
+function initBonus() { let b = mod('DEX') + [0, 1, 2][ess('beast')]; activeItems().forEach(c => b += ITEMS[c.id].init || 0); if (gorged()) b -= 2; return b; }
+function insightBonus() { return mod('WIS') + prof() + dt('paper'); }
+function disguiseMod(formKey) {
+  const f = FORMS[formKey]; let m = (f.skill === 'Stealth' ? mod('DEX') : mod('CHA')) + prof() + f.bonus;
+  if (f.skill === 'Deception') m += dt('gold') + dt('music');
+  if (f.skill === 'Stealth') { activeItems().forEach(c => { m += ITEMS[c.id].stealth || 0; m -= ITEMS[c.id].clank || 0; }); if (gorged()) m -= 3; }
+  if (ess('fey') >= 1) m += 2;
+  if (feat('gilded')) m += 1;
+  if (S.tier === 'wardrobe') m += 2;
+  if (S.companion && S.companion.path === 'pet') m -= 1;
+  return m;
+}
+function guardMod() { let g = 0; activeItems().forEach(c => g += ITEMS[c.id].guard || 0); return g; }
+function escapeDC() { let dc = 8 + prof() + mod('STR') + dt('tool'); activeItems().forEach(c => dc += ITEMS[c.id].grip || 0); if (S.tier === 'vault') dc += 3; if (feat('lockjaw')) dc += 3; if (ess('plant') >= 2) dc += 2; return dc; }
+function swallowDC() { return 8 + prof() + mod('STR') + dt('tool'); }
+function biteHit() { return prof() + mod('STR'); }
+function biteBase() { return '1d8'; }
+function acidExpr() { const p = parseExpr(T().acid); let n = p.n + [0, 1, 2][ess('ooze')]; if (hasItem('salt') && cursedOn()) n = Math.max(0, n - 1); return { n, b: dt('metal') + Math.max(0, mod('CON')) }; }
+function acidRoll() { const a = acidExpr(); let t = a.b; for (let i = 0; i < a.n; i++) t += die(6); return t; }
+function acidAvg() { const a = acidExpr(); return a.n * 3.5 + a.b; }
+function bestWeapon() {
+  let best = null;
+  S.grid.forEach((c, i) => {
+    if (!c) return; const it = ITEMS[c.id]; if (!it.weapon) return; if (it.attune && !isAttuned(c.uid)) return;
+    const adj = it.tags.includes('blade') ? adjCount(i, x => x.tags.includes('blade')) : 0;
+    const a = avg(it.weapon) + adj; if (!best || a > best.avg) best = { c, i, it, adj, avg: a };
+  });
+  return best;
+}
+function breathInfo() {
+  const wand = S.grid.findIndex(c => c && c.id === 'ember_wand' && isAttuned(c.uid));
+  const f = ess('fiend'); if (wand < 0 && !f) return null;
+  let dice = f === 2 ? 3 : 2, extra = []; if (wand >= 0) { if (adjCount(wand, (x, c) => c.id === 'spellbook')) extra.push('1d6'); if (adjCount(wand, (x, c) => c.id === 'ember_core')) extra.push('1d4'); }
+  return { expr: dice + 'd6', extra, flat: dt('arcane'), dc: 8 + prof() + mod('CON') + dt('arcane') };
+}
+function fireRes() { return activeHas('dragon_scale') || ess('elemental') >= 1; }
+function digestSpeed() { return [1, 2, 3][ess('ooze')]; }
+function notTier() { const n = S.notoriety; return n >= 80 ? 3 : n >= 50 ? 2 : n >= 25 ? 1 : 0; }
+const NOT_NAMES = ['Rumour', 'Wanted', 'Hunted', 'Legend'];
+function swallowMax() { return T().swallow; }
+function canSwallowSize(sz) { return SIZES[sz].n <= swallowMax(); }
+function cutThreshold() { return Math.max(10, Math.floor(maxHp() / 3)); }
+function xpToNext() { return S.lvl >= MAX_LVL ? 0 : XP_AT[S.lvl + 1]; }
+
+// ---------- Items: placing, fusing, digesting ----------
+function firstEmpty() { return S.grid.findIndex(c => !c); }
+function addLoot(id, msgs) {
+  if (id === 'bag') { award('bigger', msgs); }
+  if (S.tray.length >= 6) { msgs && msgs.push({ text: `[No room. ${ITEMS[id].name} falls out of you.]`, cls: 'bad' }); return false; }
+  S.tray.push(mkItem(id)); return true;
+}
+function placeFromTray(trayIdx, cell) {
+  const it = S.tray[trayIdx]; if (!it) return false; fitGrid();
+  if (cell == null || cell < 0) cell = firstEmpty(); if (cell < 0 || cell >= cellCount()) return false;
+  const prev = S.grid[cell]; S.grid[cell] = it; S.tray.splice(trayIdx, 1);
+  if (prev) S.tray.push(prev);
+  onGridChange(); return true;
+}
+function moveCell(a, b) { const t = S.grid[a]; S.grid[a] = S.grid[b]; S.grid[b] = t; onGridChange(); }
+function onGridChange() {
+  if (hasItem('bag')) S.flags.bag = true;
+  fitGrid();
+  // unlock regions from maps
+  if (hasItem('treasure_map') && !S.regions.includes('vault')) { S.regions.push('vault'); sys('[The Treasure Map shows a way into the Hidden Vault. It is now on your map.]', 'level'); }
+  S.attuned = S.attuned.filter(u => S.grid.some(c => c && c.uid === u));
+  if (S.bait && !S.grid.some(c => c && c.uid === S.bait)) S.bait = null;
+}
+function spitOut(cell) { const c = S.grid[cell]; if (!c) return false; if (ITEMS[c.id].cursed && cursedOn()) return false; S.grid[cell] = null; if (S.bait === c.uid) S.bait = null; S.attuned = S.attuned.filter(u => u !== c.uid); onGridChange(); return true; }
+function toggleAttune(cell) { const c = S.grid[cell]; if (!c || !ITEMS[c.id].attune) return false; if (isAttuned(c.uid)) S.attuned = S.attuned.filter(u => u !== c.uid); else { if (S.attuned.length >= 3) return false; S.attuned.push(c.uid); if (S.bait === c.uid) S.bait = null; } return true; }
+function fusable() {
+  const counts = {};
+  S.grid.concat(S.tray).forEach(c => { if (c && ITEMS[c.id].fuse) counts[c.id] = (counts[c.id] || 0) + 1; });
+  return Object.keys(counts).filter(k => counts[k] >= 3);
+}
+function fuse(id, msgs) {
+  let need = 3; const into = ITEMS[id].fuse;
+  for (let i = S.tray.length - 1; i >= 0 && need; i--) if (S.tray[i].id === id) { S.tray.splice(i, 1); need--; }
+  let cell = -1;
+  for (let i = 0; i < S.grid.length && need; i++) if (S.grid[i] && S.grid[i].id === id) { if (cell < 0) cell = i; if (S.bait === S.grid[i].uid) S.bait = null; S.grid[i] = null; need--; }
+  const n = mkItem(into);
+  if (cell >= 0) S.grid[cell] = n; else S.tray.push(n);
+  onGridChange();
+  msgs && msgs.push({ text: `[Fusion! Three ${ITEMS[id].name} become ${ITEMS[into].name}.]`, cls: 'level' });
+  return n;
+}
+function eatItem(cell, msgs) {
+  const c = S.grid[cell]; if (!c) return false; const it = ITEMS[c.id]; if (it.use !== 'eat') return false;
+  S.grid[cell] = null; S.belly = Math.min(bellyCap() + 2, S.belly + (it.belly || 1));
+  if (it.heal) S.hp = Math.min(maxHp(), S.hp + roll(it.heal) + 2 * dt('potion'));
+  onGridChange(); msgs && msgs.push({ text: `[You eat the ${it.name}. Delicious, technically.]` });
+  return true;
+}
+function startDigest(cell) {
+  if (S.digest) return false; const c = S.grid[cell]; if (!c) return false; const it = ITEMS[c.id]; if (it.noDigest) return false;
+  S.grid[cell] = null; S.attuned = S.attuned.filter(u => u !== c.uid); if (S.bait === c.uid) S.bait = null;
+  const dur = DIGEST_MIN[it.r] * 60000 / digestSpeed();
+  S.digest = { item: c, start: Date.now(), left: dur, dur };
+  onGridChange(); return true;
+}
+function finishDigest(msgs) {
+  const it = ITEMS[S.digest.item.id]; const id = S.digest.item.id; S.digest = null;
+  const gained = [];
+  it.tags.forEach(tag => {
+    const D = DIGEST_TAGS[tag];
+    if (D && dt(tag) < D.max) { S.dtraits[tag] = dt(tag) + 1; gained.push(`${D.name} (${D.each})`); }
+    if (TYPES.includes(tag)) { addEssence(tag, 1, msgs); gained.push(`${TYPE_NAME[tag]} essence`); }
+  });
+  if (id === 'spellbook' && !S.forms.includes('bookshelf')) { S.forms.push('bookshelf'); gained.push('the Bookshelf form'); }
+  if (id === 'treasure_map' && !S.regions.includes('vault')) S.regions.push('vault');
+  const line = gained.length ? `[Digested: ${it.name}. You gained ${gained.join(', ')}.]` : (it.tags.includes('junk') ? `[Digested: ${it.name}. You gained nothing. You knew that.]` : `[Digested: ${it.name}. Your traits from it are already maxed.]`);
+  msgs ? msgs.push({ text: line, cls: 'level' }) : null; sys(line, 'level');
+}
+function addEssence(type, n, msgs) {
+  const before = ess(type); S.essence[type] = (S.essence[type] || 0) + n; const after = ess(type);
+  if (after > before) {
+    const E = ESSENCE[type]; const txt = `[${TYPE_NAME[type]} trait ${after === 1 ? 'awakened' : 'deepened'}: ${E.name}. ${after === 1 ? E.i : E.ii}]`;
+    msgs && msgs.push({ text: txt, cls: 'level' }); sys(txt, 'level');
+    if (type === 'undead' && after === 2 && !S.forms.includes('coffin')) S.forms.push('coffin');
+    if (type === 'giant') S.hp += after === 1 ? 5 : 7;
+  }
+  if (TYPES.every(t => (S.essence[t] || 0) > 0)) award('omnivore', msgs);
+}
+function award(id, msgs) {
+  if (S.titles[id]) return; S.titles[id] = Date.now();
+  const txt = `[Title earned: ${TITLES[id].name}. ${TITLES[id].desc}]`;
+  msgs && msgs.push({ text: txt, cls: 'title' }); sys(txt, 'title');
+}
+
+// ---------- XP, levels, evolution ----------
+function gainXp(n, msgs) {
+  if (S.lvl >= MAX_LVL) return;
+  S.xp += Math.round(n);
+  while (S.lvl < MAX_LVL && S.xp >= XP_AT[S.lvl + 1]) {
+    const before = maxHp(); S.lvl++; S.hp += maxHp() - before;
+    const txt = levelLine(S.lvl); msgs && msgs.push({ text: txt, cls: 'level' }); sys(txt, 'level');
+    if (ASI_LVLS.includes(S.lvl)) S.pending.push('asi');
+    if (S.lvl === 3 && S.tier === 'lesser') S.pending.push('evo_chest');
+    if (S.lvl === 6 && S.tier === 'chest') S.pending.push('evo_branch');
+    if (S.lvl === MAX_LVL) S.pending.push('max');
+  }
+}
+const LEVEL_LINES = ['', '', '[Level 2. You are now slightly more box.]', '[Level 3. Something is happening to your hinges.]', '[Level 4. You may improve yourself. Please improve your manners.]', '[Level 5. You have reached Level 5. Several adventurers who were trying to have not.]', '[Level 6. You are outgrowing the room.]', '[Level 7. The dungeon has started to notice you.]', '[Level 8. Improve yourself again. The System has given up on your manners.]', '[Level 9. There are fewer adventurers than there used to be. Correlation is not causation.]', '[Level 10. You have reached the end of this prototype. The System is relieved.]'];
+function levelLine(l) { return LEVEL_LINES[l] || `[Level ${l}.]`; }
+function evolveTo(tier, msgs) {
+  const before = maxHp(); S.tier = tier; fitGrid(); S.hp += Math.max(0, maxHp() - before);
+  if (tier === 'chest' && !S.forms.includes('barrel')) S.forms.push('barrel');
+  if (tier === 'wardrobe') ['wardrobe', 'coffin'].forEach(f => { if (!S.forms.includes(f)) S.forms.push(f); });
+  if (tier === 'doorway' && !S.forms.includes('door')) S.forms.push('door');
+  if (tier === 'chest' && !S.regions.includes('road')) S.regions.push('road');
+  const txt = `[Evolution complete: ${TIERS[tier].name}. ${TIERS[tier].desc}]`;
+  msgs && msgs.push({ text: txt, cls: 'level' }); sys(txt, 'level');
+}
+function applyAsi(choice) {
+  if (ABILS.includes(choice)) { const b = maxHp(); S.abil[choice] = Math.min(20, S.abil[choice] + 2); if (choice === 'CON') S.hp += maxHp() - b; sys(`[${ABIL_NAME[choice]} +2.]`, 'level'); }
+  else if (FEATS[choice] && !feat(choice)) { S.feats.push(choice); sys(`[Feat learned: ${FEATS[choice].name}. ${FEATS[choice].desc}]`, 'level'); }
+}
+function unlockRegions() { REGION_ORDER.forEach(k => { const R = REGIONS[k]; if (R.secret) return; if (S.lvl >= R.lvl && (!R.tier || S.tier !== 'lesser') && !S.regions.includes(k)) { S.regions.push(k); sys(`[New area reachable: ${R.name}.]`, 'level'); } }); }
+
+// ---------- Notoriety ----------
+function addNotoriety(n, msgs) {
+  const before = notTier(); S.notoriety = clamp(S.notoriety + n, 0, 100); const after = notTier();
+  if (after > before) { const t = ['', '[Notoriety: Wanted. Posters with a crude drawing of a box have appeared. People look closer.]', '[Notoriety: Hunted. The Mimic Hunters have heard of you.]', '[Notoriety: Legend. Someone has started leaving offerings in front of you.]'][after]; msgs && msgs.push({ text: t, cls: 'bad' }); sys(t, 'bad'); }
+}
+
+// ---------- Visitors and encounters ----------
+function baitItem() { return S.bait ? S.grid.find(c => c && c.uid === S.bait) : null; }
+function baitWants() { const b = baitItem(); if (!b) return []; return [...new Set(ITEMS[b.id].tags.map(t => TAG_WANT[t]).filter(Boolean))]; }
+function baitBonus(v) {
+  const b = baitItem(); if (!b) return 0; const ws = baitWants(); if (!v.wants.some(w => ws.includes(w))) return 0;
+  const it = ITEMS[b.id]; let n = 2 + (it.bait || 0);
+  if (ws.includes('gold')) { const cell = S.grid.findIndex(c => c && c.uid === b.uid); n += adjCount(cell, x => x.tags.includes('gold')); n += [0, 1, 2][ess('dragon')]; }
+  return n;
+}
+function spawnWeights(regionKey) {
+  const R = REGIONS[regionKey]; const ws = baitWants(); const fa = FORMS[S.form].attract;
+  const ids = Object.keys(R.w);
+  return { ids, w: ids.map(id => { const v = VISITORS[id]; let w = R.w[id]; if (v.wants.some(x => ws.includes(x))) w *= 2.5; if (v.wants.some(x => fa.includes(x))) w *= 1.8; return w; }) };
+}
+function rollVisitorId(regionKey) { const { ids, w } = spawnWeights(regionKey || S.region); return wpick(ids, w); }
+function mkVisitor(id) { const d = VISITORS[id]; return { id, hp: d.hp, maxHp: d.hp, grappled: false, swallowed: false, blind: 0, charmed: 0, poisoned: 0, healed: false, specUsed: {} }; }
+
+// waiting queue: 'companion' | 'hunter' | visitor id
+function nextArrival() {
+  if (S.lvl >= 3 && !S.flags.compSeen && !S.queue.includes('companion')) return 'companion';
+  if (S.queue.length) return S.queue.shift();
+  if (S.notoriety >= 35 && S.lvl >= 4 && !S.flags.heskDone && !S.flags.heskSeen && rnd() < 0.35) { S.flags.heskSeen = true; return 'hesk'; }
+  return rollVisitorId();
+}
+function startEncounter(id) {
+  if (id === 'companion') { S.queue = S.queue.filter(q => q !== 'companion'); S.flags.compSeen = true; return { companion: true }; }
+  const d = VISITORS[id];
+  S.enc = { vid: id, v: mkVisitor(id), phase: 'approach', insight: true, sweet: false, surprise: false, turn: 0, log: [], dice: null, breathReady: true, used: {}, lucky: 0, stun: 0, mocked: 0, dark: 0, poisoned: 0, salted: 0, braced: false, gulpUsed: false, playDead: false, result: null };
+  elog(d.line, 'sys');
+  if (d.rival) { elog('[Warning: You are not the only mimic in this dungeon.]', 'bad'); }
+  if (d.boss) { elog('[Warning: This visitor is carrying a ten-foot pole. That is a professional.]', 'bad'); }
+  return S.enc;
+}
+function elog(text, cls) { S.enc.log.push({ text, cls: cls || '' }); if (S.enc.log.length > 40) S.enc.log.shift(); }
+function vdef() { return VISITORS[S.enc.vid]; }
+function visitorPP() { const d = vdef(); return d.pp + (d.type === 'humanoid' ? notTier() : 0); }
+function canSweetTalk() { const d = vdef(); return SPEAKERS.includes(d.type) && (ess('humanoid') >= 1 || feat('silver') || (S.companion && S.companion.path === 'reformer')) && !S.enc.sweet; }
+function sweetBonus() { return ess('humanoid') >= 2 ? 5 : 3; }
+
+function actInsight() {
+  const e = S.enc; if (e.insight !== null) return;
+  if (feat('silver')) { e.insight = true; return; }
+  const r = d20(0), tot = r.r + insightBonus(); const ok = tot >= 12;
+  e.dice = { label: 'Insight', r, mod: insightBonus(), total: tot, vs: 12, vsLabel: 'DC', ok };
+  e.insight = ok; elog(ok ? `You read them. They want ${vdef().wants.map(w => WANTS[w].toLowerCase()).join(' and ')}.` : 'You cannot read them. They are a mystery wrapped in a visitor.', ok ? 'good' : '');
+}
+function actSweetTalk() {
+  const e = S.enc; if (!canSweetTalk()) return; e.sweet = true;
+  elog(pick(['"Psst. Free loot. Totally free."', '"Hello, traveller. I am a perfectly normal chest. Open me."', '"Oh no. I am so heavy and full of gold. If only someone would open me."']), 'me');
+}
+function actLetPass(msgs) {
+  const e = S.enc; const d = vdef();
+  if (S.companion && S.companion.path === 'reformer') { const xp = d.xp * 0.25; gainXp(xp, e.resMsgs = e.resMsgs || []); elog(`Wren smiles at you. (+${Math.round(xp)} XP)`, 'good'); if (rnd() < 0.2 && d.loot.length) { const it = pick(d.loot)[0]; addLoot(it, e.resMsgs); elog(`The visitor leaves something by you on the way out: ${ITEMS[it].name}.`, 'good'); } }
+  else elog('You hold very, very still. They walk on by.');
+  finish('passed');
+}
+function actLure() {
+  const e = S.enc, d = vdef();
+  if (d.rival) { elog('The other chest opens its lid. So do you. Neither of you is fooled.', 'bad'); return beginCombat(false, true); }
+  if (!e.sweet && typeof canSweetFor === 'function' && canSweetFor(d)) { e.sweet = true; elog(pick(['"Psst. Free loot. Totally free."', '"Hello, traveller. I am a perfectly normal chest. Open me."', '"Oh no. I am so heavy and full of gold. If only someone would open me."']), 'me'); }
+  const bb = baitBonus(d), sw = e.sweet ? sweetBonus() : 0, part = S.companion && S.companion.path === 'partner' ? 2 : 0;
+  const mode = (ess('fey') >= 2 ? 1 : 0) + (gorged() && FORMS[S.form].skill === 'Stealth' ? -1 : 0);
+  const m = disguiseMod(S.form) + bb + sw + part;
+  const r = d20(mode), tot = r.r + m, pp = visitorPP(); const ok = tot >= pp;
+  e.dice = { label: FORMS[S.form].skill, r, mod: m, total: tot, vs: pp, vsLabel: 'Passive Perception', ok, parts: [['disguise', disguiseMod(S.form)], ['bait', bb], ['sweet talk', sw], ['Wren', part]].filter(p => p[1]) };
+  if (!ok) {
+    elog(`${d.name} isn't fooled.`, 'bad');
+    if (d.aggressive) { elog(`${d.name} attacks!`, 'bad'); return beginCombat(false); }
+    e.phase = 'missed'; return;
+  }
+  elog(bb ? `The bait works. ${d.name} comes closer.` : `${d.name} comes closer.`, 'good');
+  // investigation step
+  if (d.inv != null) {
+    const adv = (d.chestAdv && S.form === 'chest') || d.alwaysAdv;
+    const guard = guardMod(); const noAdv = activeHas('hesk_crowbar');
+    const r2 = d20(adv && !noAdv ? 1 : 0), t2 = r2.r + d.inv, dc = 10 + disguiseMod(S.form) + guard;
+    const spotted = t2 >= dc;
+    e.dice2 = { label: `${d.name}: Investigation`, r: r2, mod: d.inv, total: t2, vs: dc, vsLabel: 'your disguise', ok: !spotted, them: true };
+    if (spotted) {
+      elog(d.alwaysAdv ? 'She pokes you with the ten-foot pole. You flinch. She smiles.' : `${d.name} checks you carefully and spots a tooth.`, 'bad');
+      if (d.flee >= 0.6 && !d.aggressive) { e.phase = 'combat'; e.turn = 1; S.stats.fights++; return tryFleeNow(); }
+      return beginCombat(false);
+    }
+    elog(`${d.name} checks you over and finds nothing wrong.`, 'good');
+  }
+  touched();
+}
+function touched() {
+  const e = S.enc, d = vdef();
+  elog(`${d.name} opens your lid.`, '');
+  elog('[Adhesive: they are stuck to you.]', 'sys');
+  e.v.grappled = true; e.surprise = true; e.skipEnemy = 1;
+  beginCombat(true);
+}
+function actLunge() { elog('You lunge.', 'me'); beginCombat(false); }
+function beginCombat(surprise, rival) {
+  const e = S.enc; e.phase = 'combat'; e.turn = 1; S.stats.fights++;
+  if (surprise) { elog('[Surprise round. You attack with advantage.]', 'sys'); return; }
+  const me = d20(gorged() ? -1 : 0), them = d20(0); const mi = me.r + initBonus(), ti = them.r + vdef().dex;
+  e.dice = { label: 'Initiative', r: me, mod: initBonus(), total: mi, vs: ti, vsLabel: `${vdef().name}'s initiative`, ok: mi >= ti };
+  if (mi < ti) { elog(`${vdef().name} acts first.`, 'bad'); enemyTurn(); }
+  else elog('You act first.', 'good');
+}
+function vAlive() { return S.enc && S.enc.v.hp > 0; }
+
+// --- player actions ---
+function availableActions() {
+  const e = S.enc, v = e.v, d = vdef(), out = [];
+  if (e.phase !== 'combat') return out;
+  if (v.swallowed) {
+    out.push({ k: 'clench', label: 'Clench', sub: `Acid ${acidExpr().n}d6+${acidExpr().b}` });
+    out.push({ k: 'brace', label: 'Brace', sub: 'Halve their damage from inside' });
+    out.push({ k: 'spit', label: 'Spit them out', sub: 'They will run' });
+    return out;
+  }
+  out.push({ k: 'bite', label: S.tier === 'barrel' ? 'Bite ×2' : 'Bite', sub: `${sgn(biteHit())} · 1d8${sgn(mod('STR') + biteFlat())}` });
+  if (!v.grappled) out.push({ k: 'tongue', label: 'Tongue Lash', sub: `${sgn(biteHit() + [0, 2, 4][ess('plant')])} · grapple` });
+  const canGulp = S.tier === 'doorway' && !e.gulpUsed && !v.grappled;
+  if (v.grappled || canGulp) {
+    const ok = canSwallowSize(d.size) && !gorged();
+    out.push({ k: 'swallow', label: canGulp && !v.grappled ? 'Doorway Gulp' : 'Swallow', sub: !canSwallowSize(d.size) ? `Too big (${SIZES[d.size].name})` : gorged() ? 'Too full' : `DC ${swallowDC()} Dex save`, disabled: !ok });
+  }
+  const w = bestWeapon(); if (w) out.push({ k: 'weapon', label: w.it.name, sub: `${sgn(biteHit() + (w.it.hit || 0))} · ${w.it.weapon}+${mod('STR') + w.adj}` });
+  const b = breathInfo(); if (b) out.push({ k: 'breath', label: 'Fire Breath', sub: e.breathReady ? `${b.expr} · DC ${b.dc}` : 'Recharging (5–6)', disabled: !e.breathReady });
+  S.grid.forEach((c, i) => { if (!c) return; const it = ITEMS[c.id]; if (it.use === 'heal') out.push({ k: 'potion', cell: i, label: it.name, sub: `Heal ${it.heal}` }); if (it.use === 'blind') out.push({ k: 'dust', cell: i, label: it.name, sub: 'Blind 2 turns' }); if (it.use === 'charm' && !e.used.lute) out.push({ k: 'lute', cell: i, label: 'Play the Lute', sub: `Charm · DC ${10 + d.wis}` }); });
+  if (!v.grappled) out.push({ k: 'dead', label: 'Play Dead', sub: 'Deception vs Perception' });
+  // dedupe items
+  const seen = {}; return out.filter(a => { const key = a.k + (a.k === 'potion' || a.k === 'dust' ? '' : a.label); if (seen[key]) return false; seen[key] = 1; return true; });
+}
+function biteFlat() { let f = dt('blade') + [0, 1, 2][ess('beast')] + dt('fire'); return f; }
+function attackRoll(bonus, mode) { return d20(mode); }
+function bitesAgainst(v) {
+  const e = S.enc, d = vdef();
+  let mode = 0; if (e.surprise) mode = 1; if (e.playDead) mode = 1; if (feat('lockjaw') && v.grappled) mode = 1; if (e.mocked) mode -= 1; if (e.dark) mode -= 1;
+  return clamp(mode, -1, 1);
+}
+function critOn() { return 20 - [0, 1, 2][ess('construct')]; }
+function doBite(label) {
+  const e = S.enc, v = e.v, d = vdef();
+  const mode = bitesAgainst(v); const r = d20(mode); const hitB = biteHit() - (e.poisoned ? 2 : 0); const tot = r.r + hitB;
+  const crit = r.r >= critOn(), hit = crit || (r.r !== 1 && tot >= d.ac);
+  e.dice = { label: label || 'Bite', r, mod: hitB, total: tot, vs: d.ac, vsLabel: 'AC', ok: hit, crit };
+  if (!hit) { elog(`${label || 'Bite'} misses.`, ''); return 0; }
+  let dmg = roll('1d8', crit) + mod('STR') + biteFlat();
+  activeItems().forEach(c => { const it = ITEMS[c.id]; if (it.extraBite) dmg += roll(it.extraBite, crit); });
+  if (hasItem('holy_symbol') && (d.type === 'undead' || d.type === 'fiend')) dmg += roll('1d4', crit);
+  if (ess('elemental') >= 2) dmg += roll('1d4', crit);
+  if (ess('monstrosity') && v.hp <= v.maxHp / 2) dmg += roll(ess('monstrosity') === 2 ? '2d6' : '1d6', crit);
+  dmg = Math.max(1, dmg);
+  hurtV(dmg, crit ? `CRITICAL! ${label || 'Bite'}` : (label || 'Bite'));
+  return dmg;
+}
+function hurtV(n, what) { const e = S.enc; e.v.hp -= n; e.lastHitV = n; elog(`${what}: ${n} damage.`, 'me'); e.fx = (e.fx || []).concat({ on: 'v', n }); }
+function hurtMe(n, what, kind) {
+  const e = S.enc;
+  if (kind === 'fire' && fireRes()) n = Math.floor(n / 2);
+  if (kind === 'acid' && (feat('ironstomach') || ess('elemental') >= 2)) n = Math.floor(n / 2);
+  if (kind === 'poison' && feat('ironstomach')) n = Math.floor(n / 2);
+  n = Math.max(0, n); S.hp -= n; elog(`${what}: ${n} damage to you.`, 'foe'); e.fx = (e.fx || []).concat({ on: 'me', n });
+  return n;
+}
+function playerAction(k, cell) {
+  const e = S.enc; if (!e || e.phase !== 'combat') return;
+  const v = e.v, d = vdef();
+  e.fx = [];
+  if (k === 'bite') { doBite(); if (S.tier === 'barrel' && vAlive()) doBite('Second bite'); }
+  else if (k === 'tongue') {
+    const mode = bitesAgainst(v); const r = d20(mode); const b = biteHit() + [0, 2, 4][ess('plant')]; const tot = r.r + b; const hit = r.r === 20 || (r.r !== 1 && tot >= d.ac);
+    e.dice = { label: 'Tongue Lash', r, mod: b, total: tot, vs: d.ac, vsLabel: 'AC', ok: hit };
+    if (hit) { v.grappled = true; elog(`Your tongue wraps around ${d.name}. Grappled.`, 'me'); } else elog('Your tongue slaps the floor.', '');
+  }
+  else if (k === 'swallow') {
+    const gulp = !v.grappled && S.tier === 'doorway'; if (gulp) e.gulpUsed = true;
+    if (!canSwallowSize(d.size) || gorged()) return;
+    const r = d20(0), tot = r.r + d.dex, dc = swallowDC(); const saved = tot >= dc;
+    e.dice = { label: `${d.name}: Dexterity save`, r, mod: d.dex, total: tot, vs: dc, vsLabel: 'your swallow DC', ok: !saved, them: true };
+    if (saved) elog(`${d.name} braces against your jaws and stays outside.`, 'bad');
+    else { v.swallowed = true; v.grappled = true; elog(`[Swallowed. ${d.name} is inside you now.]`, 'sys'); }
+  }
+  else if (k === 'clench') { hurtV(Math.max(1, acidRoll()), 'You clench'); }
+  else if (k === 'brace') { e.braced = true; elog('You brace your insides.', 'me'); }
+  else if (k === 'spit') { v.swallowed = false; v.grappled = false; elog(`You spit ${d.name} out.`, 'me'); tryFleeNow(); return; }
+  else if (k === 'weapon') {
+    const w = bestWeapon(); if (!w) return; const mode = bitesAgainst(v); const r = d20(mode); const b = biteHit() + (w.it.hit || 0) - (e.poisoned ? 2 : 0); const tot = r.r + b; const crit = r.r >= 20; const hit = crit || (r.r !== 1 && tot >= d.ac);
+    e.dice = { label: w.it.name, r, mod: b, total: tot, vs: d.ac, vsLabel: 'AC', ok: hit, crit };
+    if (hit) hurtV(Math.max(1, roll(w.it.weapon, crit) + mod('STR') + w.adj), `${crit ? 'CRITICAL! ' : ''}You swing the ${w.it.name} with your tongue`); else elog(`The ${w.it.name} whiffs.`, '');
+  }
+  else if (k === 'breath') {
+    const b = breathInfo(); if (!b || !e.breathReady) return; e.breathReady = false;
+    let dmg = roll(b.expr) + b.flat; b.extra.forEach(x => dmg += roll(x));
+    const r = d20(0), tot = r.r + d.dex, saved = tot >= b.dc; e.dice = { label: `${d.name}: Dexterity save`, r, mod: d.dex, total: tot, vs: b.dc, vsLabel: 'your breath DC', ok: !saved, them: true };
+    hurtV(saved ? Math.floor(dmg / 2) : dmg, saved ? 'Fire breath (half)' : 'Fire breath');
+  }
+  else if (k === 'potion') { const c = S.grid[cell]; if (!c) return; const h = roll(ITEMS[c.id].heal) + 2 * dt('potion'); S.grid[cell] = null; onGridChange(); S.hp = Math.min(maxHp(), S.hp + h); elog(`You drink the potion from the inside. +${h} HP.`, 'good'); }
+  else if (k === 'dust') { const c = S.grid[cell]; if (!c) return; S.grid[cell] = null; onGridChange(); v.blind = 2; elog(`You sneeze glittering dust. ${d.name} is blinded.`, 'me'); }
+  else if (k === 'lute') {
+    e.used.lute = true; const r = d20(0), b = mod('CHA') + prof(), tot = r.r + b, dc = 10 + d.wis; const ok = tot >= dc;
+    e.dice = { label: 'Performance', r, mod: b, total: tot, vs: dc, vsLabel: 'DC', ok };
+    if (ok) { v.charmed = 1; elog(`You play the lute with your tongue. ${d.name} is charmed. Mostly confused.`, 'me'); } else elog('You play the lute with your tongue. It sounds exactly like that.', '');
+  }
+  else if (k === 'dead') {
+    const mode = S.tier === 'wardrobe' ? 1 : 0; const r = d20(mode), m = disguiseMod(S.form), tot = r.r + m, pp = visitorPP(); const ok = tot >= pp;
+    e.dice = { label: 'Play Dead', r, mod: m, total: tot, vs: pp, vsLabel: 'Passive Perception', ok };
+    if (ok) { e.playDead = true; elog(`You go limp. ${d.name} leans in to check... and touches you.`, 'good'); elog('[Adhesive: they are stuck to you.]', 'sys'); v.grappled = true; v.charmed = 1; }
+    else elog('You go limp. Nobody believes you.', 'bad');
+  }
+  // reset one-shot advantages after an attack
+  if (['bite', 'tongue', 'weapon'].includes(k)) { e.surprise = false; e.playDead = false; if (e.mocked) e.mocked = 0; }
+  // second mouth
+  if (ess('aberration') && vAlive() && !v.swallowed && ['bite', 'tongue', 'weapon', 'breath', 'swallow'].includes(k)) { const n = roll(ess('aberration') === 2 ? '1d8' : '1d4'); hurtV(n, 'Your second mouth'); }
+  afterPlayer();
+}
+function afterPlayer() {
+  const e = S.enc;
+  if (!vAlive()) return win();
+  if (!e.v.grappled && e.v._fled) return;
+  enemyTurn();
+}
+function tryFleeNow() {
+  const e = S.enc, d = vdef(), v = e.v; if (e.phase !== 'combat') return true;
+  if (S.tier === 'barrel') {
+    const r = d20(0), tot = r.r + Math.max(d.dex, d.esc), dc = escapeDC();
+    e.dice = { label: `${d.name}: escape`, r, mod: Math.max(d.dex, d.esc), total: tot, vs: dc, vsLabel: 'you roll after them', ok: tot < dc, them: true };
+    if (tot < dc) { elog(`${d.name} runs. You roll after them and cut them off.`, 'good'); return false; }
+  }
+  // opportunity bite
+  elog(`${d.name} turns to run!`, 'bad');
+  const mode = ess('plant') >= 1 ? 1 : 0; const r = d20(mode), tot = r.r + biteHit(); const hit = r.r === 20 || (r.r !== 1 && tot >= d.ac);
+  e.dice = { label: 'Opportunity bite', r, mod: biteHit(), total: tot, vs: d.ac, vsLabel: 'AC', ok: hit };
+  if (hit) { const dmg = roll('1d8') + mod('STR') + biteFlat() + (ess('monstrosity') ? roll(ess('monstrosity') === 2 ? '2d6' : '1d6') : 0); hurtV(Math.max(1, dmg), 'Opportunity bite'); }
+  if (!vAlive()) { win(); return true; }
+  if (d.invis) elog(`${d.name} turns invisible and is gone.`, 'bad');
+  v._fled = true; finish('fled'); return true;
+}
+function enemyTurn() {
+  const e = S.enc, v = e.v, d = vdef(); if (!vAlive() || e.phase !== 'combat') return;
+  e.turn++;
+  // inside you
+  if (v.swallowed) {
+    let a = acidRoll() + [0, roll('1d4'), roll('1d8')][ess('undead')];
+    if (e.salted) a = 0;
+    if (a > 0) hurtV(a, 'Your stomach acid');
+    if (!vAlive()) return win();
+    let total = 0; for (let i = 0; i < d.multi; i++) total += roll(d.atk[2]);
+    if (e.braced) total = Math.floor(total / 2);
+    total = hurtMe(total, `${d.name} hacks at you from inside`, d.atk[3]);
+    if (d.corrode) { hurtMe(roll('1d6'), 'The ooze digests you back', 'acid'); }
+    e.braced = false;
+    if (total >= cutThreshold() && S.hp > 0) { v.swallowed = false; v.grappled = false; e.stun = 1; elog(`${d.name} cuts their way out! Your lid is jammed for a turn.`, 'bad'); }
+    return endEnemy();
+  }
+  if (e.skipEnemy) { e.skipEnemy--; elog(`${d.name} is still stuck to you, flailing.`, 'good'); return endEnemy(); }
+  if (v.charmed) { v.charmed--; elog(`${d.name} is too charmed to act.`, 'good'); return endEnemy(); }
+  // flee?
+  if (!v.grappled && v.hp <= v.maxHp * 0.5 && rnd() < d.flee) { if (tryFleeNow()) return; }
+  // heal
+  if (d.heal && !v.healed && v.hp <= v.maxHp / 2) { v.healed = true; const h = roll(d.heal); v.hp = Math.min(v.maxHp, v.hp + h); elog(`${d.name} heals ${h}.`, 'foe'); return endEnemy(); }
+  // grappled: try to escape
+  if (v.grappled && rnd() < 0.5) {
+    const r = d20(0), m = Math.max(d.esc, d.dex), tot = r.r + m, dc = escapeDC(); const ok = tot >= dc;
+    e.dice = { label: `${d.name}: escape`, r, mod: m, total: tot, vs: dc, vsLabel: 'your escape DC', ok: !ok, them: true };
+    if (ok) { v.grappled = false; elog(`${d.name} pulls free of your tongue.`, 'bad'); if (d.flee >= 0.5 && rnd() < d.flee) { if (tryFleeNow()) return; } }
+    else elog(`${d.name} struggles, but you hold on.`, 'good');
+    return endEnemy();
+  }
+  // special
+  const sp = d.specials.find(s => !(s.once && v.specUsed[s.n]) && rnd() < s.chance);
+  if (sp) { v.specUsed[sp.n] = true; doSpecial(sp); return endEnemy(); }
+  for (let i = 0; i < d.multi && S.hp > 0; i++) enemyAttack();
+  endEnemy();
+}
+function enemyAttack() {
+  const e = S.enc, v = e.v, d = vdef();
+  const mode = v.blind ? -1 : 0; const r = d20(mode), tot = r.r + d.atk[1], myAC = ac(); const crit = r.r === 20, hit = crit || (r.r !== 1 && tot >= myAC);
+  e.dice = { label: `${d.name}: ${d.atk[0]}`, r, mod: d.atk[1], total: tot, vs: myAC, vsLabel: 'your AC', ok: !hit, them: true, crit };
+  if (!hit) { elog(`${d.name}'s ${d.atk[0]} bounces off your lid.`, 'good'); return; }
+  hurtMe(roll(d.atk[2], crit), `${crit ? 'CRITICAL! ' : ''}${d.name}'s ${d.atk[0]}`, d.atk[3]);
+  if (d.corrode && rnd() < 0.25) { const metal = S.grid.findIndex(c => c && ITEMS[c.id].tags.includes('metal') && !ITEMS[c.id].attune); if (metal >= 0) { elog(`[The ooze's acid eats your ${ITEMS[S.grid[metal].id].name}.]`, 'bad'); S.grid[metal] = null; onGridChange(); } }
+}
+function doSpecial(sp) {
+  const e = S.enc, d = vdef();
+  if (sp.effect === 'dark') { e.dark = 2; elog(`${d.name} fills the room with magical darkness. Your attacks have disadvantage.`, 'foe'); return; }
+  const r = d20(0), sb = saveBonus(sp.save), tot = r.r + sb; const saved = tot >= sp.dc;
+  e.dice = { label: `${sp.n}: your ${sp.save} save`, r, mod: sb, total: tot, vs: sp.dc, vsLabel: 'DC', ok: saved };
+  let dmg = sp.dmg && sp.dmg !== '0' ? roll(sp.dmg) : 0; if (saved && sp.half) dmg = Math.floor(dmg / 2); else if (saved) dmg = 0;
+  if (dmg) hurtMe(dmg, sp.n, sp.kind);
+  if (!saved) {
+    if (sp.effect === 'salt') { e.salted = 2; elog('[Salted. Your acid stops working for 2 turns. Some salt got inside you.]', 'bad'); addLoot('salt'); }
+    if (sp.effect === 'mock') { e.mocked = 1; elog(`${d.name} insults your craftsmanship. Your next attack has disadvantage.`, 'foe'); }
+    if (sp.effect === 'poison') { if (!feat('ironstomach')) { e.poisoned = 2; elog('You are poisoned: −2 to hit for 2 turns.', 'foe'); } }
+  } else elog(`You resist the ${sp.n}.`, 'good');
+}
+function endEnemy() {
+  const e = S.enc, v = e.v;
+  if (S.hp <= 0) return deathSaves();
+  if (v.blind) v.blind--; if (e.dark) e.dark--; if (e.poisoned) e.poisoned--; if (e.salted) e.salted--;
+  // start of your turn
+  if (e.stun) { e.stun--; elog('Your lid is jammed. You lose your turn.', 'bad'); return enemyTurn(); }
+  if (e.v.swallowed === false) e.braced = false;
+  e.breathReady = e.breathReady || die(6) >= 5;
+  const cel = ess('celestial'); if (cel) { const h = roll(cel === 2 ? '1d8' : '1d4'); S.hp = Math.min(maxHp(), S.hp + h); }
+  if (activeHas('halo')) S.hp = Math.min(maxHp(), S.hp + 1);
+}
+function deathSaves() {
+  const e = S.enc, d = vdef(); S.hp = 0; e.phase = 'dying';
+  elog('[Your lid slams shut. You are at 0 HP. Death saving throws.]', 'bad');
+  let s = 0, f = 0; const rolls = [];
+  while (s < 3 && f < 3) { const r = die(20); rolls.push(r); if (r === 20) { s = 99; break; } if (r === 1) f += 2; else if (r >= 10) s++; else f++; }
+  e.deathRolls = rolls;
+  if (s === 99) {
+    S.hp = 1; e.phase = 'combat'; e.surprise = true; e.v.swallowed = false; e.v.grappled = true;
+    elog('[Natural 20. You are not dead. They are holding your lid open to look inside.]', 'title');
+    return;
+  }
+  if (s >= 3) {
+    S.hp = 1; award('whats_in', e.resMsgs = e.resMsgs || []);
+    const takeable = S.grid.map((c, i) => [c, i]).filter(([c]) => c && !isAttuned(c.uid) && !(ITEMS[c.id].cursed && cursedOn()));
+    if (takeable.length) { const [c, i] = pick(takeable); S.grid[i] = null; onGridChange(); elog(`${d.name} decides you're just a broken chest and takes your ${ITEMS[c.id].name}.`, 'bad'); }
+    else elog(`${d.name} decides you're just a broken chest and leaves.`, 'bad');
+    addNotoriety(3); return finish('stable');
+  }
+  // shattered
+  S.stats.deaths++; award('splinters', e.resMsgs = e.resMsgs || []);
+  S.grid = S.grid.map(c => (c && (isAttuned(c.uid) || (ITEMS[c.id].cursed && cursedOn()))) ? c : null); S.tray = []; onGridChange();
+  S.belly = 0; S.notoriety = 0; S.cracked = 3; S.hp = maxHp(); S.xp = XP_AT[S.lvl];
+  elog('[You shatter. Splinters everywhere. Some time later, they pull themselves back together.]', 'bad');
+  elog('[You lost everything you were holding, except what you were attuned to. Cracked Lid: −2 AC for 3 fights. Your progress toward the next level is gone.]', 'bad');
+  finish('shattered');
+}
+function win() {
+  const e = S.enc, d = vdef(), v = e.v; const msgs = e.resMsgs = e.resMsgs || [];
+  const inside = v.swallowed; const kind = inside ? 'digested' : 'eaten';
+  elog(inside ? `[${d.name} has been digested. ${d.eat}]` : `[${d.name} is defeated. You eat what you can. ${d.eat}]`, 'title');
+  gainXp(d.xp, msgs);
+  const sz = SIZES[d.size];
+  addEssence(d.type, inside ? 2 : 1, msgs);
+  const bellyGain = inside ? sz.belly : (canSwallowSize(SIZE_BY_N[Math.max(0, sz.n - 1)]) ? Math.max(1, sz.belly - 1) : 1);
+  S.belly += bellyGain;
+  if (S.belly >= bellyCap() && !S.wasGorged) { S.wasGorged = true; S.gorged++; msgs.push({ text: '[Gorged. You are too full to swallow anything else. Stealth disguises −3.]', cls: 'bad' }); if (S.gorged >= 3) award('gourmand', msgs); }
+  // loot
+  const mult = REGIONS[S.region].loot || 1; const got = [];
+  d.loot.forEach(([id, ch]) => { if (rnd() < Math.min(0.95, ch * mult)) { if (S.companion && S.companion.path === 'partner' && ITEMS[id].tags.includes('gold') && (S.lootCut = (S.lootCut || 0) + 1) % 3 === 0) { msgs.push({ text: `Wren takes her cut: ${ITEMS[id].name}.`, cls: '' }); return; } if (addLoot(id, msgs)) got.push(id); } });
+  const Rg = REGIONS[S.region]; if (Rg.special && rnd() < 0.15) { const sp = pick(Rg.special); if (addLoot(sp, msgs)) { got.push(sp); msgs.push({ text: `[Local find: ${ITEMS[sp].name}. ${Rg.name} is known for these.]`, cls: 'level' }); } }
+  e.loot = got;
+  // records
+  S.kills[d.id] = (S.kills[d.id] || 0) + 1; S.eaten++;
+  award('first_bite', msgs); if (S.eaten >= 25) award('box_office', msgs);
+  if (d.id === 'bard') award('off_key', msgs); if (d.type === 'celestial') award('angel_food', msgs); if (d.id === 'knight' && inside) award('heavy_metal', msgs); if (d.rival) award('cannibal', msgs);
+  if (d.boss) { S.flags.heskDone = true; award('hunter_hunted', msgs); addNotoriety(-20); }
+  if (d.type === 'humanoid') { const n = S.companion && S.companion.path === 'reformer' ? 2 : 1; addNotoriety(n); if (n === 2) msgs.push({ text: 'Wren looks at you for a long time. She does not say anything.', cls: '' }); }
+  if (S.cracked > 0) S.cracked--;
+  finish(kind);
+}
+function finish(result) {
+  const e = S.enc; e.phase = 'done'; e.result = result; const d = vdef();
+  if (result === 'fled') { S.stats.fled++; addNotoriety((d.type === 'humanoid' ? 6 : 2) + (CR_XP[d.cr] >= 200 ? 3 : 0), e.resMsgs = e.resMsgs || []); const b = baitItem(); if (b && rnd() < 0.3) { const i = S.grid.findIndex(c => c && c.uid === b.uid); S.grid[i] = null; onGridChange(); elog(`They grabbed your bait on the way out: ${ITEMS[b.id].name}.`, 'bad'); } }
+  if (result === 'missed' || result === 'passed') { }
+  unlockRegions();
+}
+function retreat() {
+  const e = S.enc; if (!e || e.phase !== 'combat' || e.v.swallowed) return; const d = vdef();
+  elog(`You slam your lid shut and refuse to open. ${d.name} gives up and leaves, telling everyone about the box that bit.`, 'bad');
+  finish('retreat'); addNotoriety(d.type === 'humanoid' ? 4 : 2, e.resMsgs = e.resMsgs || []);
+}
+function closeEncounter() { const out = S.enc ? (S.enc.resMsgs || []) : []; S.enc = null; return out; }
+
+// ---------- Companion ----------
+const COMPANION_PATHS = {
+  partner: { name: 'Partner', desc: 'Wren lures for you: +2 to every lure. She takes a cut of the gold.' },
+  pet: { name: 'Pet', desc: 'Wren feeds you scraps while you are away and talks to you. +1 belly an hour, faster healing, but −1 to disguises.' },
+  reformer: { name: 'Reformer', desc: 'Wren asks you not to eat people. Letting visitors pass earns XP and gifts, she teaches you to Sweet Talk, and eating humanoids makes you more notorious.' },
+  snack: { name: 'Snack', desc: 'Eat her. The System will remember.' },
+};
+function chooseCompanion(path, msgs) {
+  S.companion = { path, at: Date.now() };
+  if (path === 'snack') {
+    S.companion = { path: 'snack', at: Date.now() };
+    gainXp(200, msgs); addEssence('humanoid', 3, msgs); award('trust_issues', msgs); S.belly += 4; addNotoriety(2, msgs);
+    sys('[You ate Wren. She had trusted you. The System has made a note.]', 'bad');
+  } else sys(`[Companion: Wren, ${COMPANION_PATHS[path].name}.]`, 'level');
+}
+
+// ---------- Time ----------
+// minutes of real time pass. away=true also simulates catches and arrivals.
+function simulate(minutes, away) {
+  const rep = { minutes, caught: [], escaped: 0, hurt: 0, xp: 0, digested: null, arrivals: [], tooFull: 0, lines: [] };
+  if (minutes <= 0) return rep;
+  // hunger
+  const rate = feat('glutton') ? 1 / 22 : 1 / 15; S.bellyAcc += minutes * rate;
+  if (S.companion && S.companion.path === 'pet' && away) S.bellyAcc -= minutes / 60;
+  const drop = Math.floor(S.bellyAcc); if (drop !== 0) { S.belly = Math.max(0, S.belly - drop); S.bellyAcc -= drop; }
+  if (S.belly < bellyCap()) S.wasGorged = false;
+  // healing
+  const regen = (S.companion && S.companion.path === 'pet' ? 2 : 1) * (starving() ? 0.5 : 1);
+  S.hpAcc = (S.hpAcc || 0) + maxHp() * 0.02 * minutes * regen; const hh = Math.floor(S.hpAcc); if (hh) { S.hp = Math.min(maxHp(), S.hp + hh); S.hpAcc -= hh; }
+  // notoriety
+  S.notAcc += minutes / 30; const nd = Math.floor(S.notAcc); if (nd) { S.notoriety = Math.max(0, S.notoriety - nd); S.notAcc -= nd; }
+  // digestion
+  if (S.digest) { S.digest.left -= minutes * 60000; if (S.digest.left <= 0) { rep.digested = S.digest.item.id; finishDigest(null); } }
+  if (away) {
+    const per = feat('patient') ? 6 : 12; const tries = Math.min(40, Math.floor(minutes / per)); const keep = feat('patient') ? 0.75 : 0.5;
+    const R = REGIONS[S.region]; const small = Object.keys(R.w).filter(id => { const d = VISITORS[id]; return CR_XP[d.cr] <= 50 + S.lvl * 25 && !d.boss && !d.rival && SIZES[d.size].n <= 2; });
+    for (let i = 0; i < tries; i++) {
+      if (!small.length) break;
+      if (S.belly >= Math.floor(bellyCap() * 0.6)) { rep.tooFull++; continue; } // leave room for the player
+      const id = pick(small), d = VISITORS[id];
+      const p = clamp(0.3 + 0.05 * (disguiseMod(S.form) - d.pp + 5) + 0.03 * S.lvl, 0.1, 0.9);
+      if (rnd() < p) {
+        const xp = d.xp * keep; rep.xp += xp; gainXp(xp, rep.lines); addEssence(d.type, 1, rep.lines); S.belly += Math.max(1, SIZES[d.size].belly - (canSwallowSize(d.size) ? 0 : 1));
+        S.kills[id] = (S.kills[id] || 0) + 1; S.eaten++; rep.caught.push(id);
+        if (d.type === 'humanoid') S.notoriety = Math.min(100, S.notoriety + 1);
+        if (d.loot.length && rnd() < 0.35 && S.tray.length < 6) { const [lid, ch] = pick(d.loot); if (rnd() < Math.max(ch, 0.4)) addLoot(lid); }
+      } else if (rnd() < 0.5) { rep.escaped++; S.notoriety = Math.min(100, S.notoriety + (d.type === 'humanoid' ? 2 : 1)); }
+      else { const h = Math.min(S.hp - 1, die(4) + 1); S.hp -= Math.max(0, h); rep.hurt += Math.max(0, h); }
+    }
+    if (rep.caught.length) { award('first_bite', rep.lines); if (S.eaten >= 25) award('box_office', rep.lines); }
+    // arrivals that wait for you
+    const hours = Math.floor(minutes / 60) + (rnd() < (minutes % 60) / 60 ? 1 : 0);
+    for (let h = 0; h < hours && S.queue.length < 3; h++) {
+      if (rnd() > 0.55) continue;
+      let q;
+      if (S.notoriety >= 35 && S.lvl >= 4 && !S.flags.heskDone && !S.queue.includes('hesk')) q = 'hesk';
+      else { const R2 = REGIONS[S.region]; const big = Object.keys(R2.w).filter(id => CR_XP[VISITORS[id].cr] >= 100); q = big.length ? pick(big) : rollVisitorId(); }
+      S.queue.push(q); rep.arrivals.push(q);
+    }
+    if (S.notoriety >= 80 && rnd() < 0.5 && S.tray.length < 6) { const gift = pick(['copper', 'bread', 'holy_symbol', 'glowcap']); addLoot(gift); rep.lines.push({ text: `Someone left an offering in front of you: ${ITEMS[gift].name}.`, cls: 'good' }); }
+    if (S.belly < bellyCap()) S.wasGorged = false;
+  }
+  unlockRegions();
+  return rep;
+}
+function tickNaps(now) { while (S.naps < 3 && now - S.napAt >= 20 * 60000) { S.naps++; S.napAt += 20 * 60000; } if (S.naps >= 3) S.napAt = now; }
+function nap() { if (S.naps <= 0) return null; S.naps--; if (S.naps === 2) S.napAt = Date.now(); return simulate(30, true); }
+function rest() { if (S.belly < 1 || S.hp >= maxHp()) return false; S.belly -= 1; S.hp = maxHp(); return true; }
+function moveTo(region) {
+  if (!S.regions.includes(region) || region === S.region) return false;
+  if (S.tier !== 'doorway') { if (S.belly < 1) return false; S.belly -= 1; }
+  S.region = region; S.notoriety = Math.max(0, S.notoriety - (S.tier === 'doorway' ? 15 : 8)); S.queue = [];
+  sys(`[You scuttle through the dark to ${REGIONS[region].name}. Nobody sees a chest walk. Nobody ever does.]`);
+  return true;
+}
+function migrate(s) { if (!s || s.v !== VERSION) return null; S = s; TYPES.forEach(t => { if (S.essence[t] == null) S.essence[t] = 0; }); fitGrid(); return S; }
+
+// ===== Streamlined helpers: odds, advice, auto-management, timers =====
+function pAtLeast(need, mode, attack) { let p = clamp((21 - need) / 20, 0, 1); if (attack) p = clamp(p, 0.05, 0.95); if (mode > 0) p = 1 - (1 - p) * (1 - p); else if (mode < 0) p = p * p; return p; }
+const pct = p => Math.round(p * 100) + '%';
+function canSweetFor(d) { return SPEAKERS.includes(d.type) && (ess('humanoid') >= 1 || feat('silver') || (S.companion && S.companion.path === 'reformer')); }
+function lureOdds(id) {
+  const d = VISITORS[id]; const notes = [];
+  if (d.rival) return { p: 0, notes: [{ ok: false, t: 'Another mimic cannot be fooled. It will fight you.' }] };
+  const bb = baitBonus(d), sw = canSweetFor(d) ? sweetBonus() : 0, part = S.companion && S.companion.path === 'partner' ? 2 : 0;
+  const mode = (ess('fey') >= 2 ? 1 : 0) + (gorged() && FORMS[S.form].skill === 'Stealth' ? -1 : 0);
+  const m = disguiseMod(S.form) + bb + sw + part; const pp = d.pp + (d.type === 'humanoid' ? notTier() : 0);
+  let p = pAtLeast(pp - m, mode);
+  notes.push({ ok: true, t: `Your ${FORMS[S.form].name.toLowerCase()} disguise (+${disguiseMod(S.form)})` });
+  if (bb) notes.push({ ok: true, t: `They want your bait (+${bb})` });
+  else if (baitItem()) notes.push({ ok: false, t: 'They do not care about your bait' });
+  else notes.push({ ok: false, t: 'You have no bait out' });
+  if (sw) notes.push({ ok: true, t: `You can sweet talk them (+${sw})` });
+  if (part) notes.push({ ok: true, t: 'Wren is helping (+2)' });
+  if (d.pp >= 13) notes.push({ ok: false, t: 'They have sharp eyes' });
+  if (d.type === 'humanoid' && notTier()) notes.push({ ok: false, t: 'People are on the lookout for you' });
+  if (mode < 0) notes.push({ ok: false, t: 'You are too full to stay still' });
+  if (d.inv != null) {
+    const adv = ((d.chestAdv && S.form === 'chest') || d.alwaysAdv) && !activeHas('hesk_crowbar');
+    const det = pAtLeast(10 + disguiseMod(S.form) + guardMod() - d.inv, adv ? 1 : 0); p *= (1 - det);
+    notes.push({ ok: false, t: d.alwaysAdv ? 'She pokes every chest with a ten-foot pole' : d.chestAdv && S.form === 'chest' ? 'Thieves check chests extra carefully' : 'They check things carefully before touching' });
+  }
+  if (d.aggressive) notes.push({ ok: false, t: 'If they spot you, they attack' });
+  return { p, notes };
+}
+function danger(id) {
+  const d = VISITORS[id];
+  const theirHit = pAtLeast(ac() - d.atk[1], 0, true), theirDPR = theirHit * avg(d.atk[2]) * d.multi;
+  const myHit = pAtLeast(d.ac - biteHit(), 0, true); let myDPR = myHit * (4.5 + mod('STR') + biteFlat()) * (S.tier === 'barrel' ? 2 : 1);
+  if (canSwallowSize(d.size)) myDPR = Math.max(myDPR, acidAvg() * 0.8 + myDPR * 0.5);
+  const r = (d.hp / Math.max(1, myDPR)) / (Math.max(1, S.hp) / Math.max(0.5, theirDPR));
+  return r < 0.35 ? { k: 'easy', name: 'Easy' } : r < 0.7 ? { k: 'fair', name: 'Fair fight' } : r < 1.1 ? { k: 'hard', name: 'Hard' } : { k: 'deadly', name: 'Deadly' };
+}
+function expBite() { let x = 4.5 + mod('STR') + biteFlat(); activeItems().forEach(c => { if (ITEMS[c.id].extraBite) x += avg(ITEMS[c.id].extraBite); }); return x * (S.tier === 'barrel' ? 2 : 1); }
+function simpleActions() {
+  const e = S.enc, v = e.v, d = vdef(), out = []; if (e.phase !== 'combat') return out;
+  const mode = bitesAgainst(v);
+  if (v.swallowed) {
+    out.push({ k: 'clench', icon: 'squeeze', label: 'Squeeze', sub: `About ${Math.round(acidAvg())} acid damage` });
+    out.push({ k: 'brace', icon: 'shield', label: 'Brace', sub: 'Halve the damage they do from inside' });
+    out.push({ k: 'spit', icon: 'spit', label: 'Spit out', sub: 'Let them go. They will run' });
+    out[0].best = true; return out;
+  }
+  const w = bestWeapon(); const biteP = pAtLeast(d.ac - biteHit() + (e.poisoned ? 2 : 0), mode, true);
+  const wHit = w ? biteHit() + (w.it.hit || 0) : 0, wP = w ? pAtLeast(d.ac - wHit + (e.poisoned ? 2 : 0), mode, true) : 0, wExp = w ? avg(w.it.weapon) + mod('STR') + w.adj : 0;
+  const useW = w && wP * wExp > biteP * expBite();
+  const atk = useW ? { k: 'weapon', icon: 'sword', label: `Swing the ${w.it.name}`, chance: wP, sub: `About ${Math.round(wExp)} damage` } : { k: 'bite', icon: 'teeth', label: S.tier === 'barrel' ? 'Bite twice' : 'Bite', chance: biteP, sub: `About ${Math.round(expBite() / (S.tier === 'barrel' ? 2 : 1))} damage${S.tier === 'barrel' ? ' each' : ''}` };
+  if (globalThis.cmvDetailed) atk.sub += ` · ${sgn(useW ? wHit : biteHit())} vs AC ${d.ac}`;
+  out.push(atk);
+  const fits = canSwallowSize(d.size);
+  const gulp = S.tier === 'doorway' && !e.gulpUsed && !v.grappled;
+  if (v.grappled || gulp) {
+    const p = 1 - pAtLeast(swallowDC() - d.dex, 0);
+    out.push({ k: 'swallow', icon: 'gulp', label: gulp && !v.grappled ? 'Doorway gulp' : 'Swallow', chance: fits && !gorged() ? p : null, sub: !fits ? `Too big for you (${SIZES[d.size].name})` : gorged() ? 'You are too full' : 'Digest them from the inside', disabled: !fits || gorged() });
+  }
+  if (!v.grappled) out.push({ k: 'tongue', icon: 'tongue', label: 'Grab', chance: pAtLeast(d.ac - biteHit() - [0, 2, 4][ess('plant')], mode, true), sub: fits ? 'Stick them to you, then swallow' : 'Stick them to you so they can\'t run' });
+  const b = breathInfo();
+  if (b) { const ex = avg(b.expr) + b.flat + b.extra.reduce((a, x) => a + avg(x), 0); out.push({ k: 'breath', icon: 'flame', label: 'Breathe fire', sub: e.breathReady ? `About ${Math.round(ex)} damage, never misses` : 'Recharging. Roll a 5 or 6 each turn', disabled: !e.breathReady, exp: ex }); }
+  const pot = S.grid.findIndex(c => c && ITEMS[c.id].use === 'heal');
+  if (pot >= 0) { const n = S.grid.filter(c => c && ITEMS[c.id].use === 'heal').length; out.push({ k: 'potion', cell: pot, icon: 'potion', label: 'Drink a potion', sub: `Heal about ${Math.round(avg(ITEMS[S.grid[pot].id].heal))} · ${n} left` }); }
+  const dust = S.grid.findIndex(c => c && ITEMS[c.id].use === 'blind'); if (dust >= 0) out.push({ k: 'dust', cell: dust, icon: 'sparkle', label: 'Sneeze pixie dust', sub: 'They miss more for 2 turns' });
+  const lute = S.grid.findIndex(c => c && ITEMS[c.id].use === 'charm'); if (lute >= 0 && !e.used.lute) out.push({ k: 'lute', cell: lute, icon: 'note', label: 'Play the lute', chance: pAtLeast(10 + d.wis - mod('CHA') - prof(), 0), sub: 'They lose a turn' });
+  out.push({ k: 'retreat', icon: 'lock', label: 'Slam shut', sub: 'Escape the fight. They tell people' });
+  // advice
+  let best = null; const by = k => out.find(a => a.k === k && !a.disabled);
+  if (pot >= 0 && S.hp <= maxHp() * 0.3) best = by('potion');
+  if (!best && v.grappled && fits) best = by('swallow');
+  if (!best && b && e.breathReady && (by('breath') || {}).exp > atk.chance * expBite()) best = by('breath');
+  if (!best && !v.grappled && fits && !gorged()) best = by('tongue');
+  if (!best && S.hp <= maxHp() * 0.25 && pot < 0 && ['hard', 'deadly'].includes(danger(e.vid).k)) best = by('retreat');
+  if (!best) best = out[0];
+  if (best) best.best = true;
+  return out;
+}
+
+// --- stomach looks after itself ---
+const GROUP_ORDER = ['blade', 'blunt', 'monstrosity', 'arcane', 'fire', 'elemental', 'gold', 'dragon', 'bone', 'armor', 'construct', 'tool', 'holy', 'food', 'potion', 'music', 'paper', 'cloth', 'junk', 'cursed'];
+const FIRE_ORDER = { ember_core: 0, ember_wand: 1, spellbook: 2 };
+function groupOf(id) { if (id in FIRE_ORDER) return 'arcane'; const t = ITEMS[id].tags; for (const g of GROUP_ORDER) if (t.includes(g)) return g; return 'junk'; }
+function autoArrange() {
+  fitGrid(); const items = S.grid.filter(Boolean);
+  items.sort((a, b) => GROUP_ORDER.indexOf(groupOf(a.id)) - GROUP_ORDER.indexOf(groupOf(b.id)) || ((FIRE_ORDER[a.id] ?? 9) - (FIRE_ORDER[b.id] ?? 9)) || a.id.localeCompare(b.id));
+  S.grid = new Array(cellCount()).fill(null); items.forEach((c, i) => S.grid[i] = c);
+}
+function autoManage(msgs) {
+  msgs = msgs || [];
+  let guard = 0; while (fusable().length && guard++ < 10) fuse(fusable()[0], msgs);
+  fitGrid(); while (S.tray.length && firstEmpty() >= 0) placeFromTray(0, firstEmpty());
+  S.grid.forEach(c => { if (c && ITEMS[c.id].attune && !isAttuned(c.uid) && S.attuned.length < 3) { S.attuned.push(c.uid); msgs.push({ text: `[Attuned: ${ITEMS[c.id].name}. It is working now.]`, cls: 'level' }); if (S.bait === c.uid) S.bait = null; } });
+  if (!globalThis.cmvDetailed) autoArrange(); onGridChange();
+  if (!S.bait) { const cands = S.grid.filter(c => c && !isAttuned(c.uid) && ITEMS[c.id].tags.some(t => TAG_WANT[t])); cands.sort((a, b) => (ITEMS[b.id].bait || 0) - (ITEMS[a.id].bait || 0)); if (cands[0]) S.bait = cands[0].uid; }
+  msgs.forEach(m => sys(m.text, m.cls));
+  return msgs;
+}
+
+// --- timers: everything time-based, as ms left and a total ---
+function timersList(now) {
+  const since = (now - (S.lastTick || now)) / 60000; const out = [];
+  if (S.digest) out.push({ id: 'digest', short: 'Digest', icon: 'gut', label: `Digesting ${ITEMS[S.digest.item.id].name}`, left: S.digest.left - since * 60000, total: S.digest.dur, sub: `Becomes: ${digestGain(S.digest.item.id)}` });
+  const rate = feat('glutton') ? 22 : 15;
+  if (S.belly > 0) { const next = Math.max(0, ((1 - S.bellyAcc) * rate - since) * 60000); out.push({ id: 'belly', short: 'Hungry', icon: 'belly', label: 'Belly goes down by 1', left: next, total: rate * 60000, sub: `Empty in ${fmtDur(next + (S.belly - 1) * rate * 60000)}` }); }
+  else out.push({ id: 'belly', short: 'Starving', icon: 'belly', label: 'Starving', left: 0, total: 1, sub: 'You heal at half speed. Eat something.', warn: true });
+  const mh = maxHp();
+  if (S.hp < mh) { const regen = (S.companion && S.companion.path === 'pet' ? 2 : 1) * (starving() ? 0.5 : 1); const perMin = mh * 0.02 * regen; const need = mh - S.hp - (S.hpAcc || 0); const left = Math.max(0, (need / perMin - since) * 60000); out.push({ id: 'hp', short: 'Healed', icon: 'heart', label: 'Fully healed', left, total: (mh / perMin) * 60000, sub: 'Or Rest now for 1 belly' }); }
+  if (S.naps < 3) { const left = Math.max(0, 20 * 60000 - (now - S.napAt)); out.push({ id: 'nap', short: 'Nap', icon: 'moon', label: `Next nap (${S.naps}/3 ready)`, left, total: 20 * 60000 }); }
+  if (S.notoriety > 0) { const nt = notTier(), thr = [0, 25, 50, 80][nt]; const next = Math.max(0, ((1 - S.notAcc) * 30 - since) * 60000); const pts = nt > 0 ? S.notoriety - thr : S.notoriety - 1; out.push({ id: 'not', short: 'Fame', icon: 'eye', label: nt > 0 ? `Cools down to ${NOT_NAMES[nt - 1]}` : 'Forgotten completely', left: next + Math.max(0, pts) * 30 * 60000, total: (Math.max(0, pts) + 1) * 30 * 60000, sub: `Notoriety ${S.notoriety}. Moving somewhere new cools it faster.` }); }
+  return out;
+}
+function digestGain(id) { const it = ITEMS[id]; const g = it.tags.map(t => DIGEST_TAGS[t] && dt(t) < DIGEST_TAGS[t].max ? `${DIGEST_TAGS[t].name} (${DIGEST_TAGS[t].each})` : TYPES.includes(t) ? `${TYPE_NAME[t]} essence` : null).filter(Boolean); if (id === 'spellbook' && !S.forms.includes('bookshelf')) g.push('the Bookshelf form'); return g.length ? g.join(', ') : it.tags.includes('junk') ? 'nothing at all' : 'nothing new (already maxed)'; }
+function fmtDur(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}:${String(x).padStart(2, '0')}`; }
+
+</script>
+<script>
+// ===== Contents May Vary: Snack Size — interface =====
+const app = document.getElementById('app');
+const SAVE_KEY = 'cmv-app-save-1', PREF_KEY = 'cmv-app-prefs-1';
+const ui = { view: 'home', sheet: null, anim: null, keepScroll: false, pages: {}, breaks: {}, bsig: {}, bh: {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+const prefs = Object.assign({ text: 'normal', motion: 'full', depth: 'simple', theme: 'system', layout: 'fit' }, lsGet(PREF_KEY) || {}); prefs.layout = 'fit';
+const LAYOUTS = { fit: ['One screen', 'Nothing scrolls while you play. The scene shrinks to make room, timers become chips, and extra moves tuck into a sheet.'], scroll: ['Scrolling page', 'Everything is one long page that scrolls together. Your stats stay pinned to the top.'], drawer: ['Pull-up drawer', 'The scene fills the screen and your controls sit in a drawer. Drag the handle up for more, down to see the scene.'] };
+function applyPrefs() { const r = document.documentElement; prefs.dice = prefs.depth === 'detailed' ? 'detailed' : 'simple'; globalThis.cmvDetailed = prefs.depth === 'detailed'; ['fit', 'scroll', 'drawer'].forEach(l => r.classList.toggle('lay-' + l, prefs.layout === l)); r.classList.toggle('big', prefs.text === 'large'); r.classList.toggle('calm', prefs.motion === 'reduced'); if (prefs.theme === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', prefs.theme); }
+applyPrefs();
+
+// ---------- Mimic drawing ----------
+// Each form is drawn whole, then split at the mouth line into a top half that lifts and a bottom half that stays.
+const FORM_ART = {
+  chest: { m: 78, x1: 30, x2: 170, o: '30px 78px', eyes: [[95, 73], [105, 73]], eyeR: [2.6, 3.4], body: `
+    <rect x="34" y="146" width="16" height="10" rx="2" fill="#3b2614"/><rect x="150" y="146" width="16" height="10" rx="2" fill="#3b2614"/>
+    <rect x="28" y="78" width="144" height="72" rx="4" fill="url(#gWood)" stroke="#3b2614" stroke-width="2"/>
+    <path d="M28 104h144M28 128h144" stroke="#4a2f17" stroke-width="2" opacity=".7"/>
+    <path d="M28 78 L28 54 Q100 20 172 54 L172 78 Z" fill="url(#gLid)" stroke="#3b2614" stroke-width="2"/>
+    <path d="M40 66 Q100 38 160 66" stroke="#4a2f17" stroke-width="2" fill="none" opacity=".6"/>
+    <rect x="50" y="36" width="12" height="114" fill="url(#gBrass)" stroke="#5b4219" stroke-width="1.5"/>
+    <rect x="138" y="36" width="12" height="114" fill="url(#gBrass)" stroke="#5b4219" stroke-width="1.5"/>
+    <rect x="28" y="74" width="144" height="8" fill="url(#gBrass)" stroke="#5b4219" stroke-width="1.5"/>
+    <rect x="87" y="64" width="26" height="30" rx="4" fill="url(#gBrass)" stroke="#5b4219" stroke-width="1.5"/>
+    <circle cx="56" cy="44" r="2" fill="#5b4219"/><circle cx="144" cy="44" r="2" fill="#5b4219"/><circle cx="56" cy="140" r="2" fill="#5b4219"/><circle cx="144" cy="140" r="2" fill="#5b4219"/>
+    <path d="M100 84 l-3 7h6z" fill="#2a1a0c"/>` },
+  barrel: { m: 92, x1: 46, x2: 154, o: '46px 92px', eyes: [[90, 84], [110, 84]], eyeR: [3, 3.6], body: `
+    <path d="M54 18 Q38 90 54 162 L146 162 Q162 90 146 18 Z" fill="url(#gWood)" stroke="#3b2614" stroke-width="2"/>
+    <path d="M78 18 Q70 90 78 162M100 18v144M122 18 Q130 90 122 162" stroke="#4a2f17" stroke-width="2" fill="none" opacity=".7"/>
+    <ellipse cx="100" cy="19" rx="46" ry="6" fill="#6e4524" stroke="#3b2614" stroke-width="2"/>
+    <path d="M49 38 Q100 46 151 38" stroke="url(#gBrass)" stroke-width="7" fill="none"/><path d="M45 120 Q100 128 155 120" stroke="url(#gBrass)" stroke-width="7" fill="none"/>
+    <path d="M51 150 Q100 158 149 150" stroke="url(#gBrass)" stroke-width="7" fill="none"/>
+    <circle cx="140" cy="104" r="5" fill="#3b2614"/>` },
+  bookshelf: { m: 88, x1: 38, x2: 162, o: '38px 88px', eyes: [[86, 78], [112, 78]], eyeR: [2.6, 3.2], body: `
+    <rect x="34" y="8" width="132" height="156" rx="3" fill="#4c2f17" stroke="#2c1a0b" stroke-width="2"/>
+    <rect x="42" y="14" width="116" height="144" fill="#2a1a10"/>
+    <g stroke="#1b1008" stroke-width="1">
+      <rect x="44" y="20" width="12" height="28" fill="#7b2d3a"/><rect x="57" y="24" width="10" height="24" fill="#2f5a6b"/><rect x="68" y="18" width="14" height="30" fill="#6b5a2a"/><rect x="83" y="26" width="9" height="22" fill="#3e6b3a"/><rect x="93" y="20" width="13" height="28" fill="#7b2d3a"/><rect x="107" y="22" width="11" height="26" fill="#5a3a6b"/><rect x="119" y="18" width="15" height="30" fill="#2f5a6b"/><rect x="135" y="24" width="10" height="24" fill="#6b5a2a"/><rect x="146" y="20" width="10" height="28" fill="#3e6b3a"/>
+      <rect x="44" y="60" width="14" height="28" fill="#5a3a6b"/><rect x="59" y="64" width="11" height="24" fill="#6b5a2a"/><rect x="71" y="58" width="12" height="30" fill="#7b2d3a"/><rect x="118" y="62" width="12" height="26" fill="#2f5a6b"/><rect x="131" y="58" width="14" height="30" fill="#3e6b3a"/><rect x="146" y="64" width="10" height="24" fill="#7b2d3a"/>
+      <rect x="44" y="100" width="12" height="28" fill="#2f5a6b"/><rect x="57" y="96" width="15" height="32" fill="#7b2d3a"/><rect x="73" y="102" width="10" height="26" fill="#6b5a2a"/><rect x="84" y="98" width="13" height="30" fill="#3e6b3a"/><rect x="98" y="104" width="12" height="24" fill="#5a3a6b"/><rect x="111" y="98" width="14" height="30" fill="#2f5a6b"/><rect x="126" y="100" width="11" height="28" fill="#7b2d3a"/><rect x="138" y="96" width="18" height="32" fill="#6b5a2a"/>
+      <rect x="46" y="140" width="40" height="16" fill="#6b5a2a"/><rect x="88" y="136" width="14" height="20" fill="#7b2d3a"/><rect x="104" y="140" width="36" height="16" fill="#2f5a6b"/>
+    </g>
+    <rect x="84" y="64" width="34" height="24" fill="#2a1a10"/>
+    <path d="M42 48h116M42 88h116M42 128h116" stroke="#5e3b1d" stroke-width="5"/>` },
+  door: { m: 96, x1: 56, x2: 144, o: '56px 96px', eyes: [[93, 84], [107, 84]], eyeR: [2.4, 3], body: `
+    <path d="M48 168 L48 52 Q100 -4 152 52 L152 168 Z" fill="#3b2614"/>
+    <path d="M56 168 L56 54 Q100 6 144 54 L144 168 Z" fill="url(#gWood)" stroke="#2c1a0b" stroke-width="2"/>
+    <path d="M78 22v146M100 12v156M122 22v146" stroke="#4a2f17" stroke-width="2" opacity=".7"/>
+    <rect x="56" y="58" width="88" height="9" fill="#4b4f57" stroke="#22252b"/><rect x="56" y="136" width="88" height="9" fill="#4b4f57" stroke="#22252b"/>
+    <rect x="86" y="76" width="28" height="16" rx="2" fill="#22252b" stroke="#4b4f57" stroke-width="2"/>
+    <circle cx="130" cy="112" r="7" fill="none" stroke="url(#gBrass)" stroke-width="3"/><circle cx="130" cy="104" r="3" fill="url(#gBrass)"/>` },
+  wardrobe: { m: 84, x1: 42, x2: 158, o: '42px 84px', eyes: [[90, 74], [110, 74]], eyeR: [2.6, 3.2], body: `
+    <rect x="38" y="20" width="124" height="142" rx="3" fill="url(#gWood)" stroke="#3b2614" stroke-width="2"/>
+    <path d="M32 22 h136 l-6 -12 h-124 z" fill="#6e4524" stroke="#3b2614" stroke-width="2"/>
+    <path d="M100 22v140" stroke="#3b2614" stroke-width="3"/>
+    <rect x="48" y="32" width="44" height="54" rx="3" fill="none" stroke="#4a2f17" stroke-width="2"/><rect x="108" y="32" width="44" height="54" rx="3" fill="none" stroke="#4a2f17" stroke-width="2"/>
+    <rect x="48" y="96" width="44" height="54" rx="3" fill="none" stroke="#4a2f17" stroke-width="2"/><rect x="108" y="96" width="44" height="54" rx="3" fill="none" stroke="#4a2f17" stroke-width="2"/>
+    <circle cx="94" cy="94" r="3.5" fill="url(#gBrass)"/><circle cx="106" cy="94" r="3.5" fill="url(#gBrass)"/>
+    <rect x="44" y="160" width="12" height="8" fill="#3b2614"/><rect x="144" y="160" width="12" height="8" fill="#3b2614"/>` },
+  coffin: { m: 104, x1: 26, x2: 174, o: '26px 104px', eyes: [[92, 96], [108, 96]], eyeR: [2.6, 3.2], body: `
+    <path d="M14 104 L40 66 L160 66 L186 104 L160 146 L40 146 Z" fill="#3e2a1e" stroke="#1f140c" stroke-width="2"/>
+    <path d="M22 104 L44 72 L156 72 L178 104 Z" fill="#54382a"/>
+    <path d="M70 84h60M100 76v18" stroke="url(#gBrass)" stroke-width="4"/>
+    <path d="M20 104 h160" stroke="url(#gBrass)" stroke-width="3"/>
+    <circle cx="44" cy="120" r="3" fill="url(#gBrass)"/><circle cx="156" cy="120" r="3" fill="url(#gBrass)"/>` },
+};
+function teeth(x1, x2, y, down, n) { let d = ''; const w = (x2 - x1) / n; for (let i = 0; i < n; i++) { const a = x1 + i * w, b = a + w, c = (a + b) / 2; d += down ? `M${a} ${y}L${c} ${y + 12}L${b} ${y}Z` : `M${a} ${y}L${c} ${y - 12}L${b} ${y}Z`; } return d; }
+function mimicSVG(formKey, cls) {
+  const A = FORM_ART[formKey] || FORM_ART.chest; const m = A.m, x1 = A.x1, x2 = A.x2, w = x2 - x1, cx = (x1 + x2) / 2;
+  const angry = /open/.test(cls);
+  const eyes = A.eyes.map(([x, y]) => `<ellipse class="eye" cx="${x}" cy="${y}" rx="${A.eyeR[0]}" ry="${A.eyeR[1]}" fill="${angry ? '#ff5470' : '#ffd36b'}"/>`).join('');
+  return `<div class="mimic ${cls}"><svg viewBox="0 0 200 170" role="img" aria-label="You, disguised as a ${esc(FORMS[formKey].name.toLowerCase())}">
+  <defs>
+    <linearGradient id="gWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6635"/><stop offset="1" stop-color="#6a4320"/></linearGradient>
+    <linearGradient id="gLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b07a44"/><stop offset="1" stop-color="#875627"/></linearGradient>
+    <linearGradient id="gBrass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4cd73"/><stop offset="1" stop-color="#b7832e"/></linearGradient>
+    <clipPath id="cTop"><rect x="0" y="-20" width="200" height="${m + 20}"/></clipPath>
+    <clipPath id="cBot"><rect x="0" y="${m}" width="200" height="${190 - m}"/></clipPath>
+  </defs>
+  <ellipse cx="100" cy="164" rx="${w / 2 + 6}" ry="5" fill="rgba(0,0,0,.45)"/>
+  <ellipse cx="${cx}" cy="${m - 4}" rx="${w / 2 - 4}" ry="26" fill="#3b0c19"/>
+  <g class="top" style="transform-origin:${A.o}"><path d="${teeth(x1 + 6, x2 - 6, m, true, 9)}" fill="#f4ecd6"/></g>
+  <g clip-path="url(#cBot)">${A.body}</g>
+  <path d="${teeth(x1 + 8, x2 - 8, m, false, 8)}" fill="#f4ecd6"/>
+  <path class="tongue" d="M${cx - 13} ${m - 4} Q${cx - 18} ${m + 24} ${cx + 2} ${m + 42} Q${cx + 8} ${m + 46} ${cx + 12} ${m + 36} Q${cx + 20} ${m + 18} ${cx + 13} ${m - 4} Z" fill="#ea5c7d" stroke="#a8304f" stroke-width="1.5"/>
+  <g class="top" style="transform-origin:${A.o}"><g clip-path="url(#cTop)">${A.body}</g>${eyes}</g>
+  </svg></div>`;
+}
+
+
+// ---------- Icons: one stroke style, 24px grid ----------
+const IP = {
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  belly: '<path d="M15.5 4.5a4.5 4.5 0 0 1 2 8.6L10 20.5a2.5 2.5 0 0 1-3.5-3.5l7.4-7.5a4.5 4.5 0 0 1 1.6-5z"/><path d="M6.5 17 4 19.5"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  eye: '<path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  teeth: '<path d="M3 8h18v4H3zM3 12l2.25 4 2.25-4 2.25 4 2.25-4 2.25 4 2.25-4 2.25 4L21 12M3 8l2.25-3 2.25 3 2.25-3 2.25 3 2.25-3 2.25 3 2.25-3L21 8"/>',
+  tongue: '<path d="M4 8h16M9 8v5a3 3 0 0 0 6 0V8"/><path d="M12 8v4"/>',
+  gulp: '<path d="M4 10a8 5 0 0 0 16 0"/><path d="M12 2v9m-3-3 3 3 3-3"/><path d="M7 17a5 4 0 0 0 10 0"/>',
+  squeeze: '<path d="M7 4v16M17 4v16M10 9l-3 3 3 3M14 9l3 3-3 3"/>',
+  shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.9 7.5-9.5V6z"/>',
+  spit: '<path d="M3 12h10M9 8l4 4-4 4"/><circle cx="17" cy="9" r="1.2"/><circle cx="20" cy="13" r="1.2"/><circle cx="17" cy="16" r="1.2"/>',
+  flame: '<path d="M12 21c-3.9 0-6.5-2.6-6.5-6 0-3.4 2.6-5 3.5-8.5 1.6 1.4 2.4 3 2.4 4.6 1-1 1.6-2.2 1.8-3.8 2.5 2 5.3 4.8 5.3 7.7 0 3.4-2.6 6-6.5 6z"/>',
+  potion: '<path d="M9.5 3h5M10 3v5L5.5 16.5A3 3 0 0 0 8.2 21h7.6a3 3 0 0 0 2.7-4.5L14 8V3"/><path d="M7.5 14h9"/>',
+  sparkle: '<path d="M12 3v5M12 16v5M3 12h5M16 12h5M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+  note: '<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  bed: '<path d="M3 18V7M3 13h18v5M21 13a3 3 0 0 0-3-3h-7v3"/><circle cx="7" cy="10.5" r="1.6"/>',
+  mask: '<path d="M3 7c3-1.5 6-1.5 9 0 3-1.5 6-1.5 9 0 0 7-3 11-6 11-1.4 0-2.2-1.5-3-3-.8 1.5-1.6 3-3 3-3 0-6-4-6-11z"/><path d="M7 11h2.5M14.5 11H17"/>',
+  map: '<path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  coin: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M9.5 9.5h3.7a1.6 1.6 0 0 1 0 3.2h-2.4a1.6 1.6 0 0 0 0 3.2h3.7"/>',
+  sword: '<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="m6.5 13.5 4 4M3 21l2.5-2.5"/>',
+  bone: '<path d="M7.5 4.5a2.5 2.5 0 0 0-2 4l10 10a2.5 2.5 0 1 0 4-2 2.5 2.5 0 1 0-2-4l-10-10a2.5 2.5 0 0 0-4 2"/>',
+  scroll: '<path d="M7 4h11a2 2 0 0 1 2 2v1h-3M7 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7"/><path d="M9 9h6M9 13h6M9 17h4"/>',
+  cloth: '<path d="M8 3 3.5 6.5 6 10l2-1v12h8V9l2 1 2.5-3.5L16 3c-.8 1.5-2.2 2.5-4 2.5S8.8 4.5 8 3z"/>',
+  wrench: '<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-6 4 4 0 0 1 0 4z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+  skull: '<path d="M12 3a7.5 7.5 0 0 0-5 13v3h10v-3a7.5 7.5 0 0 0-5-13z"/><circle cx="9" cy="11" r="1.6"/><circle cx="15" cy="11" r="1.6"/><path d="M10.5 19v-2M13.5 19v-2"/>',
+  question: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17" r=".6"/>',
+  scale: '<path d="M12 3c4 2 6 5 6 9s-2.5 7-6 9c-3.5-2-6-5-6-9s2-7 6-9z"/><path d="M8.5 9.5 12 12l3.5-2.5M8 14l4 3 4-3"/>',
+  tooth: '<path d="M7 3c-2 0-3.5 1.6-3.5 4 0 3 1.5 4 2 7 .5 3.5 1 7 2.5 7s1.5-4 4-4 2.5 4 4 4 2-3.5 2.5-7c.5-3 2-4 2-7 0-2.4-1.5-4-3.5-4-2 0-3 1.2-5 1.2S9 3 7 3z"/>',
+  door: '<path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M3 21h18"/><circle cx="15" cy="12.5" r="1"/>',
+  bag: '<path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  home: '<path d="M4 11 12 4l8 7v9H4z"/><path d="M10 20v-5h4v5"/>',
+  list: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  chest: '<path d="M3 10a9 5 0 0 1 18 0v10H3z"/><path d="M3 12h18"/><rect x="10" y="10.5" width="4" height="4" rx="1"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  cross: '<path d="M6 6l12 12M18 6 6 18"/>',
+  up: '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>',
+  run: '<circle cx="14" cy="4.5" r="1.8"/><path d="m6 21 3.5-5 3 2V13l-3-3-3 2M12.5 13l3 1.5 3-1M9.5 10l3-1.5 2 3"/>',
+  gut: '<path d="M8 3c-3 1-4 4-3 6.5S9 12 8.5 15s1.5 6 5 6 5.5-3 4-5.5-4.5-2-4-5S17 7 16 4.5"/>',
+  warn: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".6"/>',
+  drop: '<path d="M6 6h12M9 6V4h6v2M7 6l1 14h8l1-14"/>',
+  left: '<path d="M15 5l-7 7 7 7"/>',
+  right: '<path d="M9 5l7 7-7 7"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  save: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+  hourglass: '<path d="M6.5 3h11M6.5 21h11M7.5 3c0 5 9 5 9 9s-9 4-9 9M16.5 3c0 5-9 5-9 9s9 4 9 9"/>',
+};
+const icon = (k, cls) => `<svg class="ic ${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IP[k] || IP.question}</svg>`;
+function itemIcon(id) { const t = ITEMS[id].tags; const m = [['cursed', 'skull'], ['potion', 'potion'], ['food', 'belly'], ['fire', 'flame'], ['blade', 'sword'], ['blunt', 'wrench'], ['gold', 'coin'], ['bone', 'bone'], ['armor', 'shield'], ['holy', 'sun'], ['music', 'note'], ['paper', 'scroll'], ['construct', 'gear'], ['tool', 'wrench'], ['dragon', 'scale'], ['cloth', 'cloth'], ['arcane', 'sparkle'], ['monstrosity', 'tooth'], ['junk', 'question']]; if (id === 'bag') return 'bag'; for (const [tg, ic] of m) if (t.includes(tg)) return ic; return 'question'; }
+
+// ---------- Header ----------
+function headerHTML() {
+  const mh = maxHp(), cap = bellyCap(), nt = notTier();
+  const xpNow = Math.max(0, S.xp - XP_AT[S.lvl]), xpNeed = S.lvl >= MAX_LVL ? 1 : XP_AT[S.lvl + 1] - XP_AT[S.lvl];
+  const bellyTxt = gorged() ? 'Full' : starving() ? 'Empty' : `${S.belly}/${cap}`;
+  const xpPct = S.lvl >= MAX_LVL ? 100 : clamp(Math.round(100 * xpNow / xpNeed), 0, 100);
+  const st = (cls, ic, label, val, w, col, short) => `<div class="stat" role="img" aria-label="${label}: ${val}"><span class="sl ${cls}">${icon(ic, 'sm')}${short}</span><span class="sv"><b>${val}</b></span><div class="meter"><i style="width:${clamp(w, 0, 100)}%;background:var(${col})"></i></div></div>`;
+  return `<header class="hdr gut">
+    <div class="hrow"><div class="grow"><div class="nm">${esc(S.name)} <span class="lv">Lv ${S.lvl}</span></div><div class="tier">${esc(T().name)} · ${esc(REGIONS[S.region].name.replace(/^The /, ''))}</div></div>
+      <button class="iconbtn" data-act="sheet" data-s="settings" aria-label="Settings">${icon('gear')}</button></div>
+    <div class="stats">
+      ${st('hpc', 'heart', 'Health', `${Math.max(0, S.hp)}/${mh}`, 100 * S.hp / mh, '--hp', 'HP')}
+      ${st('bec', 'belly', 'Belly', bellyTxt, 100 * S.belly / cap, '--belly', 'Belly')}
+      ${st('xpc', 'star', 'Progress to next level', S.lvl >= MAX_LVL ? 'Max' : xpPct + '%', xpPct, '--xp', 'Next lv')}
+      ${st('eyc', 'eye', 'Fame', NOT_NAMES[nt], S.notoriety, '--eye', 'Fame')}
+    </div></header>`;
+}
+function navHTML() {
+  if (S.enc) return '';
+  const extra = S.tray.length;
+  const t = (k, ic, label, dot) => `<button class="${ui.view === k ? 'on' : ''}" data-act="view" data-v="${k}" aria-current="${ui.view === k ? 'page' : 'false'}">${icon(ic)}${label}${dot ? `<span class="dot">${dot}</span>` : ''}</button>`;
+  return `<nav class="tabs" aria-label="Main">${t('home', 'home', 'Lair')}${t('stomach', 'gut', 'Stomach', extra || '')}${t('self', 'chest', 'Mimic')}${t('journal', 'list', 'Journal')}</nav>`;
+}
+
+// ---------- Scene ----------
+function tokenHTML(d, cls, label) { const w = d.name.replace(/,.*$/, '').split(/\s+/).filter(x => !['The', 'of', 'Sister'].includes(x)); const ini = (w.length > 1 ? w[0][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase(); return `<div class="tok sz-${d.size} ${cls || ''}" style="--tc:var(--t-${d.type}, #e9c79c)" aria-hidden="true"><div class="disc">${esc(ini)}</div>${label ? `<span class="lab">${esc(label)}</span>` : ''}</div>`; }
+function sceneHTML() {
+  const R = REGIONS[S.region], e = S.enc; let mc = 'idle', tok = '';
+  if (e) {
+    const d = VISITORS[e.vid], v = e.v;
+    mc = e.phase === 'approach' || e.phase === 'missed' ? 'hold' : 'open';
+    if (v.swallowed && e.phase === 'combat') mc = 'open full';
+    if (ui.anim === 'chomp') mc += ' chomp'; if (ui.anim === 'hurt') mc += ' hurt';
+    if (e.phase === 'done' && ['eaten', 'digested'].includes(e.result)) mc = 'open lick';
+    let tc = v.grappled ? 'stuck' : ''; if (e.phase === 'done') tc = ['eaten', 'digested'].includes(e.result) ? 'eaten' : 'gone';
+    if (!(v.swallowed && e.phase !== 'done')) tok = tokenHTML(d, tc, v.grappled ? 'Stuck to you' : d.name.split(',')[0]);
+  } else if (ui.anim === 'lick') mc = 'open lick';
+  return `<section class="scene ${e ? 'enc' : ''}" id="scene"><div class="torch"></div>${!e && S.queue.length ? `<div class="qbadge">${S.queue.length} waiting</div>` : ''}${mimicSVG(S.form, mc)}${tok}</section>`;
+}
+
+// ---------- Timers ----------
+function timersHTML() {
+  const now = Date.now(); const list = timersList(now);
+  if (!list.length) return '';
+  return `<div class="card" aria-label="Timers"><h3>${icon('hourglass')}Timers</h3>${list.map(t => `<div class="timer ${t.warn ? 'warn' : ''}">${icon(t.icon)}<div class="lbl">${esc(t.label)}${t.sub ? `<small data-sub="${t.id}">${esc(t.sub)}</small>` : ''}</div><div class="clock" data-tid="${t.id}" aria-label="${esc(t.label)} in ${fmtDur(t.left)}">${t.warn ? 'Now' : fmtDur(t.left)}</div><div class="meter"><i data-tbar="${t.id}" style="width:${t.warn ? 100 : clamp(100 - 100 * t.left / t.total, 0, 100)}%;background:var(--accent)"></i></div></div>`).join('')}
+    <p class="sub">While you're away, a small visitor wanders in about every ${feat('patient') ? 6 : 12} minutes. Bigger ones wait for you.</p></div>`;
+}
+function timerStrip() {
+  const all = timersList(Date.now()); if (!all.length) return ''; const list = all.slice(0, all.length > 3 ? 2 : 3);
+  return `<div class="tstrip" data-opt="2" role="group" aria-label="Timers">${list.map(t => `<button class="tchip ${t.warn ? 'warn' : ''}" data-act="sheet" data-s="timers" aria-label="${esc(t.label)}: ${t.warn ? 'now' : fmtDur(t.left)}. Show all timers">${icon(t.icon, 'sm')}<span class="tcl">${esc(t.short)}</span><span data-tid="${t.id}">${t.warn ? 'Now' : fmtDur(t.left)}</span></button>`).join('')}${all.length > list.length ? `<button class="tchip" data-act="sheet" data-s="timers">${icon('hourglass', 'sm')}<span class="tcl">More</span><span>+${all.length - list.length}</span></button>` : ''}</div>`;
+}
+function tickTimers() {
+  if (!S) return; const now = Date.now();
+  timersList(now).forEach(t => { document.querySelectorAll(`[data-tid="${t.id}"]`).forEach(c => { if (!t.warn) c.textContent = fmtDur(t.left); }); document.querySelectorAll(`[data-tbar="${t.id}"]`).forEach(b => { if (!t.warn) b.style.width = clamp(100 - 100 * t.left / t.total, 0, 100) + '%'; }); if (t.id === 'belly') { const s = document.querySelector('[data-sub="belly"]'); if (s) s.textContent = t.sub; } });
+  const dg = document.querySelector('[data-tid="sdig"]'); if (dg && S.digest) dg.textContent = fmtDur(S.digest.left - (now - S.lastTick));
+}
+
+// ---------- Home ----------
+function homePanel() {
+  const last = S.log[0]; const b = baitItem(); const R = REGIONS[S.region];
+  const waitSub = S.queue.length ? `${S.queue.length} visitor${S.queue.length > 1 ? 's' : ''} waiting outside` : gorged() ? 'You are too full to swallow anyone' : 'Sit still and see who comes';
+  const comp = S.companion ? companionLine() : '';
+  return `<section class="panel gut">${handleHTML()}
+    ${gorged() ? `<button class="big-btn" disabled>${icon('belly')}<span>Too full to hunt<small>Belly drops in <span data-tid="belly">${fmtDur((timersList(Date.now()).find(t => t.id === 'belly') || { left: 0 }).left)}</span> · Rest makes room now</small></span></button>` : `<button class="big-btn" data-act="wait">${icon('eye')}<span>Wait for a visitor<small>${esc(waitSub)}</small></span></button>`}
+    <div class="tiles">
+      <button class="tile" data-act="rest" ${S.hp >= maxHp() || S.belly < 1 ? 'disabled' : ''}>${icon('bed')}<b>Rest</b><small>${S.hp >= maxHp() ? 'Healthy' : '−1 belly'}</small></button>
+      <button class="tile" data-act="nap" ${S.naps <= 0 ? 'disabled' : ''}>${icon('moon')}<b>Nap</b><small>30 min · ${S.naps} left</small></button>
+      <button class="tile" data-act="sheet" data-s="disguise">${icon('mask')}<b>Disguise</b><small>${esc(FORMS[S.form].name.replace('Treasure ', ''))}</small></button>
+      <button class="tile" data-act="sheet" data-s="move">${icon('map')}<b>Move</b><small>${S.regions.length} areas</small></button>
+    </div>
+    ${prefs.layout === 'fit' ? timerStrip() : timersHTML()}
+    ${last ? `<div class="sysbox ${last.cls === 'bad' ? 'bad' : ''}" data-opt="1" data-act="view" data-v="journal" role="button" aria-label="Latest message. Open journal">${esc(last.text)}</div>` : ''}
+    ${prefs.layout === 'fit' ? '' : comp}
+  </section>`;
+}
+function companionLine() { const c = S.companion; const L = { partner: 'Wren is practising her "lost traveller" face nearby.', pet: 'Wren is sitting on your lid, humming.', reformer: 'Wren is reading you a book about ethics. Out loud.', snack: '[The System has not forgotten Wren.]' }[c.path]; return `<p class="sub">${esc(L)}</p>`; }
+
+// ---------- Encounter ----------
+function rollLine(x) {
+  if (!x) return '';
+  const r = x.r, need = x.vs - x.mod;
+  const adv = r.mode ? ` (${r.mode > 0 ? 'advantage' : 'disadvantage'}: ${r.a} and ${r.b})` : '';
+  const verdict = x.crit ? '<span class="c">Critical!</span>' : x.them ? (x.ok ? '<span class="y">Good for you</span>' : '<span class="n">Bad for you</span>') : (x.ok ? '<span class="y">Success</span>' : '<span class="n">Miss</span>');
+  if (prefs.dice === 'detailed') return `<p class="roll" data-opt="1">${esc(x.label)}: d20 ${r.r}${adv} ${sgn(x.mod)} = ${x.total} vs ${esc(x.vsLabel)} ${x.vs}. ${verdict}</p>`;
+  return `<p class="roll" data-opt="1">${x.them ? 'They' : 'You'} rolled ${r.r}${r.mode ? (r.mode > 0 ? ' (best of two)' : ' (worst of two)') : ''}, needed ${Math.max(1, need)}+. ${verdict}</p>`;
+}
+function ringHTML(p) { const c = 2 * Math.PI * 30, col = p >= 0.65 ? 'var(--good)' : p >= 0.4 ? 'var(--warn)' : 'var(--bad)'; return `<div class="ring" role="img" aria-label="${pct(p)} chance"><svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="var(--card2)" stroke-width="9"/><circle cx="38" cy="38" r="30" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c * p} ${c}"/></svg><b>${pct(p)}</b></div>`; }
+function encPanel() {
+  const e = S.enc, d = VISITORS[e.vid], v = e.v;
+  if (e.phase === 'done') return `<section class="panel gut">${handleHTML()}${resultHTML()}</section>`;
+  const dz = danger(e.vid);
+  const head = `<div class="vcard card"><div class="vhead"><div><h2>${esc(d.name)}</h2><div class="meta">${SIZES[d.size].name} ${TYPE_NAME[d.type].toLowerCase()} · worth ${d.xp} XP</div></div><span class="pill d-${dz.k}">${icon(dz.k === 'easy' ? 'check' : 'warn', 'sm')}${dz.name}</span></div>
+    <div class="hpline" data-opt="5">${icon('heart', 'sm')}<div class="meter"><i style="width:${clamp(100 * v.hp / v.maxHp, 0, 100)}%;background:var(--bad)"></i></div><span>${Math.max(0, v.hp)}/${v.maxHp}</span></div>
+    ${e.phase === 'approach' ? `<p class="sub" data-opt="2">Wants: ${esc(d.wants.map(w => WANTS[w].toLowerCase()).join(', '))}${!canSwallowSize(d.size) ? ` · <b>too big to swallow</b>` : ''}${ess('dragon') && d.loot.length ? ` · carrying ${esc([...new Set(d.loot.map(l => ITEMS[l[0]].name))].join(', '))}` : ''}</p>` : ''}</div>`;
+  const lastL = e.log[e.log.length - 1];
+  const ev = lastL ? `<div aria-live="polite"><p data-opt="3" class="event ${lastL.cls === 'bad' || lastL.cls === 'foe' ? 'bad' : lastL.cls === 'good' || lastL.cls === 'title' ? 'good' : ''}">${esc(lastL.text)}</p>${rollLine(e.dice2)}${rollLine(e.dice)}</div>` : '';
+  const recent = e.log.length > 1 ? `<div class="recent">${e.log.slice(-4, -1).reverse().map(l => `<p>${esc(l.text)}</p>`).join('')}</div>` : '';
+  let body = '';
+  if (e.phase === 'approach') {
+    const o = lureOdds(e.vid);
+    body = `<div class="card"><div class="odds">${ringHTML(o.p)}<div><div class="oddsh"><b>Chance to trap them</b><button class="mini" data-act="sheet" data-s="disguise">${icon('mask', 'sm')}Change</button></div><ul class="why" data-opt="4">${o.notes.map(n => `<li class="${n.ok ? 'ok' : 'no'}">${icon(n.ok ? 'check' : 'cross', 'sm')}<span>${esc(n.t)}</span></li>`).join('')}</ul></div></div></div>
+      <div class="acts"><button class="act go" data-act="lure">${icon('chest')}<b>Lure them in</b><small>Spring the trap</small></button><button class="act" data-act="pass">${icon('moon')}<b>Let them pass</b><small>${S.companion && S.companion.path === 'reformer' ? 'Wren approves' : 'No risk'}</small></button>
+      <button class="act wide" data-act="sheet" data-s="disguise">${icon('mask')}<b>Change disguise first</b><small>${esc(FORMS[S.form].name)}${baitItem() ? ' with ' + esc(ITEMS[baitItem().id].name) : ', no bait'}</small></button></div>`;
+  } else if (e.phase === 'missed') {
+    body = `<div class="acts"><button class="act" data-act="lunge">${icon('teeth')}<b>Lunge at them</b><small>Fight without surprise</small></button><button class="act" data-act="letgo">${icon('moon')}<b>Let them go</b><small>They never knew</small></button></div>`;
+  } else {
+    let A = simpleActions(); let more = [];
+    if (prefs.layout === 'fit' && A.length > 4) { const bi = A.findIndex(a => a.best); if (bi > 2) { const [x] = A.splice(bi, 1); A.splice(2, 0, x); } more = A.slice(3); A = A.slice(0, 3); ui.more = more; }
+    const ds = e.deathRolls ? `<div class="dsv">Death saves: ${e.deathRolls.map(r => `<i class="${r === 20 ? 'n20' : r >= 10 ? 's' : 'f'}">${r}</i>`).join('')}</div>` : '';
+    body = `${ds}<div class="acts">${A.map(a => `<button class="act ${a.best ? 'best' : ''} ${a.chance != null ? 'hasc' : ''}" data-act="do" data-k="${a.k}" ${a.cell != null ? `data-c="${a.cell}"` : ''} ${a.disabled ? 'disabled' : ''}>${icon(a.icon)}<b>${esc(a.label)}</b><small>${esc(a.sub)}</small>${a.chance != null ? `<span class="chance" aria-label="${pct(a.chance)} chance">${pct(a.chance)}</span>` : ''}</button>`).join('').replace(/class="act /g, 'class="act ')}${more.length ? `<button class="act" data-act="sheet" data-s="moves">${icon('list')}<b>More moves</b><small>${more.length} more option${more.length > 1 ? 's' : ''}</small></button>` : ''}</div>`;
+  }
+  return `<section class="panel gut">${handleHTML()}${head}${ev}${body}${recent}</section>`;
+}
+const RESULT = { retreat: ['You slammed shut', 'bad'], digested: ['Digested!', ''], eaten: ['Eaten!', ''], fled: ['They got away', 'bad'], passed: ['You let them pass', ''], missed: ['They walked off', ''], stable: ['You survived', 'bad'], shattered: ['You shattered', 'bad'] };
+function resultHTML() {
+  const e = S.enc, d = VISITORS[e.vid]; const [t, c] = RESULT[e.result] || ['Done', ''];
+  const g = [];
+  if (['eaten', 'digested'].includes(e.result)) { g.push(['star', `+${d.xp} XP`]); g.push(['up', `+${e.result === 'digested' ? 2 : 1} ${TYPE_NAME[d.type]} essence`]); (e.loot || []).forEach(id => g.push([itemIcon(id), `Swallowed: ${ITEMS[id].name}`, 3])); }
+  if (e.result === 'fled') g.push(['eye', 'They will tell people about you']);
+  const msgs = (e.resMsgs || []).map(m => `<p>${esc(m.text)}</p>`).join('');
+  const lastL = e.log[e.log.length - 1];
+  return `<div class="res card"><h2 class="${c}">${t}</h2>${lastL ? `<p data-opt="2">${esc(lastL.text)}</p>` : ''}${g.length ? `<ul class="gains">${g.map(([ic, tx, o]) => `<li ${o ? `data-opt="${o}"` : ''}>${icon(ic)}${esc(tx)}</li>`).join('')}</ul>` : ''}${e.deathRolls ? `<div class="dsv">Death saves: ${e.deathRolls.map(r => `<i class="${r === 20 ? 'n20' : r >= 10 ? 's' : 'f'}">${r}</i>`).join('')}</div>` : ''}</div>
+    ${msgs ? `<div class="sysbox" data-opt="1">${msgs}</div>` : ''}
+    <button class="big-btn" data-act="close-enc">${icon('home')}<span>Back to the lair${e.loot && e.loot.length ? '<small data-opt="1">New items go straight into your stomach</small>' : ''}</span></button>`;
+}
+
+// ---------- Pager: lists are cut into pages that exactly fit the space they're given ----------
+function pager(key, items, opts) {
+  opts = opts || {};
+  const br = ui.breaks[key]; const ready = br && ui.bsig[key] === items.length;
+  if (!ready) // measuring pass: everything laid out once so real heights can be read
+    return `<div class="pg ${opts.cls || ''}" data-pg="${key}" data-n="${items.length}" data-measure="1"><div class="pg-items ${opts.grid ? 'pg-grid' : ''}">${items.join('') || `<p class="sub">${esc(opts.empty || 'Nothing here yet.')}</p>`}</div>
+      <div class="pgnav off"><button class="pgb" disabled>${icon('left')}</button><span class="pgn">Page 1 of 1</span><button class="pgb" disabled>${icon('right')}</button></div></div>`;
+  const pages = br.length; const pg = Math.min(ui.pages[key] || 0, pages - 1); ui.pages[key] = pg;
+  const slice = items.slice(br[pg], pg + 1 < pages ? br[pg + 1] : items.length);
+  return `<div class="pg ${opts.cls || ''}" data-pg="${key}" data-n="${items.length}"><div class="pg-items ${opts.grid ? 'pg-grid' : ''}">${slice.join('') || `<p class="sub">${esc(opts.empty || 'Nothing here yet.')}</p>`}</div>
+    <div class="pgnav ${pages > 1 ? '' : 'off'}"><button class="pgb" data-act="page" data-k="${key}" data-d="-1" ${pg === 0 ? 'disabled' : ''} aria-label="Previous page">${icon('left')}</button><span class="pgn" aria-live="polite">Page ${pg + 1} of ${pages}</span><button class="pgb" data-act="page" data-k="${key}" data-d="1" ${pg >= pages - 1 ? 'disabled' : ''} aria-label="Next page">${icon('right')}</button></div></div>`;
+}
+function measurePagers() {
+  let changed = false;
+  document.querySelectorAll('.pg[data-pg]').forEach(pg => {
+    const key = pg.dataset.pg, box = pg.querySelector('.pg-items'); if (!box) return;
+    const h = box.clientHeight;
+    if (!pg.dataset.measure) { if (ui.bh[key] && Math.abs(ui.bh[key] - h) > 2) { delete ui.breaks[key]; changed = true; } return; }
+    const kids = [...box.children].filter(k => k.tagName !== 'P'); const breaks = [0];
+    let top = kids.length ? kids[0].offsetTop : 0;
+    kids.forEach((k, i) => { if (i > breaks[breaks.length - 1] && k.offsetTop + k.offsetHeight - top > h - 1) { breaks.push(i); top = k.offsetTop; } });
+    ui.breaks[key] = breaks; ui.bsig[key] = +pg.dataset.n; ui.bh[key] = h; changed = true;
+  });
+  return changed;
+}
+function fitOptional() {
+  document.querySelectorAll('main .panel, .vbody, .sh-b, .view').forEach(c => {
+    if (!c.offsetParent) return;
+    const opts = [...c.querySelectorAll('[data-opt]')].sort((a, b) => +a.dataset.opt - +b.dataset.opt);
+    const over = () => { const cb = c.getBoundingClientRect().bottom; return [...c.children].some(ch => ch.offsetParent && getComputedStyle(ch).position !== 'absolute' && ch.getBoundingClientRect().bottom > cb + 1); };
+    let i = 0; while (i < opts.length && over()) opts[i++].style.display = 'none';
+  });
+}
+function remeasure() { ui.breaks = {}; ui.bsig = {}; ui.bh = {}; }
+const row = (ic, title, sub, attrs, cls) => `<${attrs ? 'button' : 'div'} class="pi ${cls || ''}" ${attrs || ''}>${icon(ic)}<span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></${attrs ? 'button' : 'div'}>`;
+
+// ---------- Stomach ----------
+const SHORT = { healing_potion: 'Potion', ring_prot: 'Ring', cloak: 'Cloak', contract: 'Contract', hesk_crowbar: 'Crowbar', mimic_tooth: 'Mimic Tooth', clockwork_jaw: 'Clock Jaw', gut_blade: 'Gut Blade', treasure_map: 'Map', knight_plate: 'Plate', dragon_scale: 'Scale', pixie_dust: 'Pixie Dust', gold_ring: 'Gold Ring', bag: 'Bag', rusty_dagger: 'Dagger', copper: 'Coins', silver: 'Silver', goldhoard: 'Gold Hoard', bone_cage: 'Bone Cage', map_scrap: 'Map Scrap', holy_symbol: 'Holy Symbol', ember_wand: 'Wand', ember_core: 'Ember', big_club: 'Club', leather: 'Leather', bread: 'Bread', glowcap: 'Glowcap', lockpicks: 'Picks', wet_sock: 'Sock', salt: 'Salt', halo: 'Halo', gear: 'Gear', spellbook: 'Book', shortsword: 'Sword', longsword: 'Longsword' };
+function stomachView() {
+  fitGrid(); const cols = gridCols(), rows = gridRows(), n = cellCount(); let cells = '';
+  for (let i = 0; i < n; i++) {
+    const c = S.grid[i];
+    if (!c) { cells += ui.moving != null ? `<button class="cell target" data-act="cell" data-i="${i}" aria-label="Move here"></button>` : `<div class="cell" aria-label="Empty space"></div>`; continue; }
+    const it = ITEMS[c.id];
+    const flag = S.bait === c.uid ? '<span class="flag">BAIT</span>' : it.attune && isAttuned(c.uid) ? '<span class="flag att">ON</span>' : it.cursed && cursedOn() ? '<span class="flag cur">CURSED</span>' : '';
+    cells += `<button class="cell it r-${it.r} ${ui.moving === i ? 'moving' : ''}" data-act="${ui.moving != null ? 'cell' : 'item'}" data-i="${i}" aria-label="${esc(it.name)}${S.bait === c.uid ? ', bait' : ''}">${flag}${icon(itemIcon(c.id))}<span>${esc(SHORT[c.id] || it.name)}</span></button>`;
+  }
+  const line = ui.moving != null ? `<button class="strip warn" data-act="move-cancel">${icon('map', 'sm')}<span>Moving ${esc(ITEMS[S.grid[ui.moving].id].name)}: tap a space. Tap here to cancel.</span></button>` : S.tray.length ? `<button class="strip warn" data-act="sheet" data-s="full">${icon('warn', 'sm')}<span>No room for ${S.tray.length} item${S.tray.length > 1 ? 's' : ''}. Tap to see.</span></button>`
+    : S.digest ? `<div class="strip">${icon('gut', 'sm')}<span>Digesting ${esc(ITEMS[S.digest.item.id].name)}</span><b data-tid="digest">${fmtDur(S.digest.left)}</b></div>`
+    : `<div class="strip">${icon('gut', 'sm')}<span>Tap an item to use or digest it.</span></div>`;
+  return `<section class="view gut"><div class="vh"><h2>Stomach</h2><span class="sub">${gridItems().length}/${n} full</span></div>${line}
+    <div class="gridwrap"><div class="grid" style="--cols:${cols};--rows:${rows}">${cells}</div></div></section>`;
+}
+function itemSheet(i) {
+  const c = S.grid[i]; if (!c) return '';
+  const it = ITEMS[c.id]; const o = [];
+  if (!it.attune || !isAttuned(c.uid)) o.push(row('coin', S.bait === c.uid ? 'Stop using as bait' : 'Use as bait', baitWantsFor(c.id), `data-act="setbait" data-i="${i}"`, S.bait === c.uid ? 'on' : ''));
+  if (it.use === 'eat') o.push(row('belly', 'Eat it now', `+${it.belly} belly${it.heal ? ', heal a little' : ''}`, `data-act="eat" data-i="${i}"`));
+  if (!it.noDigest) o.push(row('gut', `Digest · ${Math.round(DIGEST_MIN[it.r] / digestSpeed())} min`, S.digest ? 'Already digesting something' : 'Becomes: ' + digestGain(c.id), `data-act="digest" data-i="${i}" ${S.digest ? 'disabled' : ''}`));
+  if (it.attune) o.push(row('sparkle', isAttuned(c.uid) ? 'Switch off' : 'Switch on', `${S.attuned.length}/3 magic items on`, `data-act="attune" data-i="${i}"`));
+  if (globalThis.cmvDetailed) o.push(row('map', 'Move it', 'Pick a new space. Neighbours boost each other', `data-act="move" data-i="${i}"`));
+  o.push(row('drop', 'Drop it', it.cursed && cursedOn() ? 'Cursed: it will not come out' : 'Gone for good', `data-act="spit" data-i="${i}" ${it.cursed && cursedOn() ? 'disabled' : ''}`));
+  return sheetWrap(it.name, `<p class="desc">${esc(it.r[0].toUpperCase() + it.r.slice(1))}${it.attune ? ' magic item' : ''}. ${esc(it.desc)}</p>${pager('item', o)}`);
+}
+function baitWantsFor(id) { const ws = [...new Set(ITEMS[id].tags.map(t => TAG_WANT[t]).filter(Boolean))]; return ws.length ? 'Attracts visitors who want ' + ws.map(w => WANTS[w].toLowerCase()).join(' or ') : 'Nobody wants this'; }
+
+// ---------- Mimic ----------
+const PLAIN = { STR: 'Bite, grip', DEX: 'Sneaky forms', CON: 'Health, belly', INT: 'Using items', WIS: 'Reading visitors', CHA: 'Charm, bait' };
+const FORM_UNLOCK = { chest: '', barrel: 'Become a Chest Mimic (level 3).', bookshelf: 'Digest a Spellbook.', door: 'Become a Doorway Mimic (level 6).', wardrobe: 'Become a Wardrobe Mimic (level 6).', coffin: 'Wardrobe Mimic, or eat 8 undead.' };
+function selfView() {
+  const sub = ui.sub || 'stats';
+  const tabs = [['stats', 'Stats'], ['traits', 'Traits'], ['forms', 'Forms'], ['titles', 'Titles']];
+  let body = '';
+  if (sub === 'stats') {
+    body = `<div class="abil">${ABILS.map(k => `<div><small>${ABIL_NAME[k]}</small><b>${score(k)}</b><small data-opt="2">${esc(PLAIN[k])}</small></div>`).join('')}</div>
+      <div class="kv2">${[['Armour', ac(), 9], ['Bite', `~${Math.round(expBite())}`, 8], ['Swallows', SIZES[SIZE_BY_N[swallowMax()]].name, 7], ['Acid', `~${Math.round(acidAvg())}/turn`, 4], ['Belly', bellyCap(), 3], ['Prof.', sgn(prof()), 1]].map(([k, v, o]) => `<div data-opt="${o}"><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
+  } else if (sub === 'traits') {
+    const items = [];
+    TYPES.filter(t => ess(t)).forEach(t => items.push(row('up', `${ESSENCE[t].name} ${ess(t) === 2 ? 'II' : 'I'}`, ess(t) === 2 ? ESSENCE[t].ii : ESSENCE[t].i, '', 'on')));
+    Object.keys(DIGEST_TAGS).filter(t => dt(t)).forEach(t => items.push(row('gut', `${DIGEST_TAGS[t].name} ×${dt(t)}`, `${DIGEST_TAGS[t].each} each`)));
+    TYPES.filter(t => ess(t) < 2).map(t => ({ t, n: S.essence[t] || 0, need: ESS_AT[ess(t)] })).sort((a, b) => (a.need - a.n) - (b.need - b.n))
+      .forEach(x => items.push(row('hourglass', `${ESSENCE[x.t].name}${ess(x.t) ? ' II' : ''} · ${x.n}/${x.need}`, `Eat ${x.need - x.n} more ${TYPE_NAME[x.t].toLowerCase()}`, '', 'off')));
+    body = `<div class="slist">${items.join('')}</div>`;
+  } else if (sub === 'forms') {
+    body = '<div class="slist">' + (Object.keys(FORMS).map(k => row(k === 'door' ? 'door' : 'mask', FORMS[k].name, S.forms.includes(k) ? 'Attracts visitors who want ' + FORMS[k].attract.map(w => WANTS[w].toLowerCase()).join(' or ') : FORM_UNLOCK[k], '', S.forms.includes(k) ? '' : 'off')).join('')) + '</div>';
+  } else {
+    const ks = Object.keys(TITLES).sort((a, b) => (S.titles[b] ? 1 : 0) - (S.titles[a] ? 1 : 0));
+    body = `<div class="slist">${ks.map(k => row('star', S.titles[k] ? TITLES[k].name : '???', TITLES[k].desc, '', S.titles[k] ? '' : 'off')).join('')}</div>`;
+  }
+  return `<section class="view gut"><div class="vh"><h2>${esc(S.name)}</h2><span class="sub">Level ${S.lvl} ${esc(T().name)}</span></div>
+    <div class="seg" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${sub === k}" class="${sub === k ? 'on' : ''}" data-act="sub" data-k="${k}">${l}</button>`).join('')}</div>
+    <div class="vbody">${body}</div></section>`;
+}
+function journalView() { return `<section class="view gut"><div class="vh"><h2>Journal</h2><span class="sub">Newest first</span></div><div class="vbody">${pager('log', S.log.map(l => `<div class="pi log ${l.cls === 'bad' ? 'bad' : ''}"><span>${esc(l.text)}</span></div>`))}</div></section>`; }
+
+// ---------- Sheets: full pages with a close button, never scrolling ----------
+function sheetWrap(title, body, foot, locked) {
+  return `<div class="ov"><div class="sheet gut" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sh-h"><h2>${esc(title)}</h2>${locked ? '' : `<button class="iconbtn" data-act="close" aria-label="Close">${icon('cross')}</button>`}</div><div class="sh-b">${body}</div>${foot ? `<div class="sh-f">${foot}</div>` : ''}</div></div>`;
+}
+function sheetHTML() {
+  const s = ui.sheet; if (!s) return '';
+  if (s.t === 'intro') return `<div class="ov"><div class="sheet gut" role="dialog" aria-label="Start"><div class="sh-b intro"><div class="title-art">${mimicSVG('chest', 'idle')}<div class="big-t">Contents May Vary</div></div>
+    <div class="sysbox">[Object has achieved sentience. You are a Lesser Mimic. Please choose a name.]</div>
+    <label for="nm"><b>Your name</b></label><input class="inp" id="nm" maxlength="24" value="Lid" autocomplete="off">
+    <p class="sub">Pretend to be furniture. Lure visitors in. Eat them. Grow while you're away.</p></div>
+    <div class="sh-f"><button class="big-btn" data-act="begin">${icon('eye')}<span>Open your eyes</span></button><button class="linkbtn" data-act="sheet" data-s="import">I have a save code</button></div></div></div>`;
+  if (s.t === 'item') return itemSheet(s.i);
+  if (s.t === 'full') return sheetWrap('No room', `<p class="desc">These can't fit in your stomach. Digest or drop something to make space and they'll go in.</p>${pager('full', S.tray.map(c => row(itemIcon(c.id), ITEMS[c.id].name, ITEMS[c.id].desc)))}`);
+  if (s.t === 'timers') return sheetWrap('Timers', pager('timers', timersList(Date.now()).map(t => `<div class="pi">${icon(t.icon)}<span><b>${esc(t.label)}</b><small>${esc(t.sub || '')}</small></span><em data-tid="${t.id}">${t.warn ? 'Now' : fmtDur(t.left)}</em></div>`), { empty: 'Nothing is counting down right now.' }));
+  if (s.t === 'moves') { const M = (ui.more || []).filter(() => S.enc); return sheetWrap('More moves', pager('moves', M.map(a => `<button class="act ${a.chance != null ? 'hasc' : ''}" data-act="do" data-k="${a.k}" ${a.cell != null ? `data-c="${a.cell}"` : ''} ${a.disabled ? 'disabled' : ''}>${icon(a.icon)}<b>${esc(a.label)}</b><small>${esc(a.sub)}</small>${a.chance != null ? `<span class="chance">${pct(a.chance)}</span>` : ''}</button>`), { grid: true })); }
+  if (s.t === 'settings') {
+    const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button class="${prefs[key] === v ? 'on' : ''}" data-act="pref" data-k="${key}" data-v="${v}" aria-pressed="${prefs[key] === v}">${l}</button>`).join('')}</div>`;
+    return sheetWrap('Settings', `<div class="setrow"><b>Detail</b>${seg('depth', [['simple', 'Simple'], ['detailed', 'Detailed']])}</div><div class="setrow"><b>Text size</b>${seg('text', [['normal', 'Normal'], ['large', 'Large']])}</div><div class="setrow"><b>Motion</b>${seg('motion', [['full', 'Full'], ['reduced', 'Reduced']])}</div><div class="setrow"><b>Theme</b>${seg('theme', [['system', 'Device'], ['light', 'Light'], ['dark', 'Dark']])}</div>
+      ${pager('set', [row('save', 'Back up your save', 'Get a code to keep or move to another device', 'data-act="sheet" data-s="export"'), row('up', 'Restore from a code', 'Replace this mimic with a saved one', 'data-act="sheet" data-s="import"'), row('question', 'How to play', 'Eight quick pages', 'data-act="sheet" data-s="howto"'), row('scroll', 'About and credits', 'Version, inspirations and licences', 'data-act="sheet" data-s="about"'), row('drop', 'Start over', 'Erase this mimic', 'data-act="sheet" data-s="reset"', 'danger')])}`);
+  }
+  if (s.t === 'export') { const code = saveCode(); return sheetWrap('Back up your save', `<p class="desc">Copy this code somewhere safe, like your Notes app. Paste it into Restore on any device to bring ${esc(S.name)} back.</p><textarea class="inp code" id="exp" readonly aria-label="Save code">${esc(code)}</textarea><p class="sub" id="copied" aria-live="polite"></p>`, `<button class="big-btn" data-act="copy">${icon('save')}<span>Copy code</span></button>`); }
+  if (s.t === 'import') return sheetWrap('Restore from a code', `<p class="desc">Paste a save code. This replaces ${S ? esc(S.name) : 'any current mimic'} on this device.</p><textarea class="inp code" id="imp" aria-label="Paste save code" placeholder="CMV1:…"></textarea><p class="sub bad" id="imperr" aria-live="polite">${esc(ui.importErr || '')}</p>`, `<button class="big-btn" data-act="restore">${icon('up')}<span>Restore</span></button>`);
+  if (s.t === 'about') return sheetWrap('About', pager('about', [row('chest', 'Contents May Vary', 'Version ' + APP_VERSION + '. A mimic idle game.'), row('star', 'Inspired by', 'LitRPG mimic stories, auto-battlers, tactics games and tabletop roleplaying. All characters and names here are original.'), row('scroll', 'SRD 5.1 attribution', 'This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.'), row('eye', 'Not affiliated', 'Not affiliated with or endorsed by Wizards of the Coast.')]));
+  if (s.t === 'howto') return sheetWrap('How to play', pager('howto', [
+    row('mask', '1. Disguise', 'Pick a form and some bait. The ring shows your chance to trick each visitor.'),
+    row('chest', '2. Lure', 'If they open you, they stick to you and you strike first.'),
+    row('gulp', '3. Grab and swallow', 'Anything your size or smaller can be swallowed. Acid does the rest.'),
+    row('teeth', '4. Best move', 'Every button shows its chance. The best one is marked.'),
+    row('gut', '5. Stomach', 'Loot goes inside you and helps you fight. Digest items for upgrades.'),
+    row('up', '6. Grow', 'Eat 3 of a creature type to gain its trait. Levels 3 and 6 evolve you.'),
+    row('hourglass', '7. Come back later', 'Belly empties, digestion finishes and visitors wander in while you are away.'),
+    row('eye', '8. Fame', 'Escaped witnesses make you famous. Too famous and a hunter comes. Moving cools it.')]));
+  if (s.t === 'disguise') {
+    const tab = ui.dtab || 'form';
+    const items = S.grid.map((c, i) => [c, i]).filter(([c]) => c && !(ITEMS[c.id].attune && isAttuned(c.uid)));
+    const list = tab === 'form'
+      ? Object.keys(FORMS).filter(k => S.forms.includes(k)).map(k => row(k === 'door' ? 'door' : 'mask', `${FORMS[k].name} · +${disguiseMod(k)}`, 'Attracts visitors who want ' + FORMS[k].attract.map(w => WANTS[w].toLowerCase()).join(' or '), `data-act="setform" data-k="${k}"`, S.form === k ? 'on' : ''))
+      : [row('cross', 'No bait', 'Just a box', 'data-act="pickbait" data-i="-1"', !S.bait ? 'on' : '')].concat(items.map(([c, i]) => row(itemIcon(c.id), ITEMS[c.id].name, baitWantsFor(c.id), `data-act="pickbait" data-i="${i}"`, S.bait === c.uid ? 'on' : '')));
+    return sheetWrap('Disguise', `<div class="seg" role="tablist"><button class="${tab === 'form' ? 'on' : ''}" data-act="dtab" data-k="form">Form</button><button class="${tab === 'bait' ? 'on' : ''}" data-act="dtab" data-k="bait">Bait</button></div>${pager('dis-' + tab, list)}`);
+  }
+  if (s.t === 'move') return sheetWrap('Move', `<p class="desc">Moving cools your fame${S.tier === 'doorway' ? ' and is free' : ' and costs 1 belly'}. Waiting visitors leave.</p>${pager('move', REGION_ORDER.filter(k => !REGIONS[k].secret || S.regions.includes(k)).map(k => { const R = REGIONS[k], on = S.regions.includes(k); const why = R.tier && S.tier === 'lesser' ? 'Reach level 3 to leave the dungeon' : `Reach level ${R.lvl}`; return row(on ? 'map' : 'cross', R.name + (S.region === k ? ' · here' : ''), on ? 'Known for ' + R.known : why, `data-act="moveto" data-k="${k}" ${on && S.region !== k && (S.belly >= 1 || S.tier === 'doorway') ? '' : 'disabled'}`, S.region === k ? 'on' : ''); }))}`);
+  if (s.t === 'asi') { const tab = ui.atab || 'abil'; const list = tab === 'abil' ? ABILS.map(k => row('up', `${ABIL_NAME[k]} +2`, PLAIN[k], `data-act="asi" data-k="${k}" ${S.abil[k] >= 20 ? 'disabled' : ''}`)) : Object.keys(FEATS).filter(f => !feat(f)).map(f => row('star', FEATS[f].name, FEATS[f].desc, `data-act="asi" data-k="${f}"`));
+    return sheetWrap(`Level ${S.lvl}: pick one`, `<div class="seg" role="tablist"><button class="${tab === 'abil' ? 'on' : ''}" data-act="atab" data-k="abil">Abilities</button><button class="${tab === 'feat' ? 'on' : ''}" data-act="atab" data-k="feat">Feats</button></div>${pager('asi-' + tab, list)}`, '', true); }
+  if (s.t === 'evo_chest') return sheetWrap('You are evolving', `<div class="title-art sm">${mimicSVG('chest', 'idle')}</div>${pager('evo1', [row('gulp', 'Swallow Small creatures', 'Goblins, kobolds, halflings'), row('gut', 'Bigger stomach', '4 × 4 spaces'), row('mask', 'New form: Barrel', 'A sneaky disguise'), row('map', 'Leave the dungeon', 'The Forest Road opens')])}`, `<button class="big-btn" data-act="evo" data-k="chest">${icon('up')}<span>Evolve</span></button>`, true);
+  if (s.t === 'evo_branch') return sheetWrap('Choose your evolution', `<p class="desc">All four make you Large, so you can swallow knights.</p>${pager('evo2', BRANCHES.map(k => row({ vault: 'shield', wardrobe: 'mask', doorway: 'door', barrel: 'run' }[k], TIERS[k].name, TIERS[k].desc, `data-act="evo" data-k="${k}"`)), { cls: 'tall' })}`, '', true);
+  if (s.t === 'max') return sheetWrap('Level 10', `<div class="sysbox">[You have reached the end of this prototype. Next: Mimic Room.]</div>`, `<button class="big-btn" data-act="close">${icon('check')}<span>Keep eating</span></button>`);
+  if (s.t === 'report') { const r = s.r; const counts = {}; r.caught.forEach(id => counts[id] = (counts[id] || 0) + 1); const rows = []; const hrs = r.minutes >= 60 ? `${Math.floor(r.minutes / 60)}h ${Math.round(r.minutes % 60)}m` : `${Math.round(r.minutes)} min`;
+    rows.push(row('chest', `You ate ${r.caught.length || 'nobody'}`, Object.entries(counts).map(([id, n]) => `${n > 1 ? n + ' × ' : ''}${VISITORS[id].name}`).join(', ') || 'Nobody wandered in. Rude.'));
+    if (r.xp) rows.push(row('star', `+${Math.round(r.xp)} XP`, 'From what you ate'));
+    if (r.escaped) rows.push(row('eye', `${r.escaped} got away`, 'They told people about you'));
+    if (r.hurt) rows.push(row('heart', `You took ${r.hurt} damage`, 'Some fought back'));
+    if (r.tooFull) rows.push(row('belly', `Too full to eat ${r.tooFull}`, 'Tragic'));
+    if (r.digested) rows.push(row('gut', 'Digestion finished', ITEMS[r.digested].name));
+    if (r.arrivals.length) rows.push(row('hourglass', `${r.arrivals.length} waiting outside`, r.arrivals.map(id => VISITORS[id] ? VISITORS[id].name : 'someone').join(', ')));
+    r.lines.forEach(l => rows.push(`<div class="pi log"><span>${esc(l.text)}</span></div>`));
+    return sheetWrap(`Away for ${hrs}`, pager('report', rows), `<button class="big-btn" data-act="close">${icon('eye')}<span>Open your eyes</span></button>`); }
+  if (s.t === 'companion') return sheetWrap('Someone opens you', `<p class="desc">Wren, a scrawny adventurer, sees your teeth and doesn't scream. "Want to work together?"</p>${pager('comp', Object.keys(COMPANION_PATHS).map(k => row({ partner: 'coin', pet: 'heart', reformer: 'sun', snack: 'teeth' }[k], COMPANION_PATHS[k].name, COMPANION_PATHS[k].desc, `data-act="comp" data-k="${k}"`, k === 'snack' ? 'danger' : '')), { cls: 'tall' })}`, '', true);
+  if (s.t === 'reset') return sheetWrap('Start over?', `<p class="desc">This erases ${esc(S.name)} for good.</p>`, `<button class="big-btn danger" data-act="reset-yes">${icon('drop')}<span>Erase and start again</span></button>`);
+  return '';
+}
+
+// ---------- Render ----------
+function buildHTML() {
+  let main;
+  if (S.enc) main = sceneHTML() + encPanel();
+  else if (ui.view === 'stomach') main = stomachView();
+  else if (ui.view === 'self') main = selfView();
+  else if (ui.view === 'journal') main = journalView();
+  else main = sceneHTML() + homePanel();
+  return `<main class="${!!S.enc || ui.view === 'home' ? 'stage-on' : 'list-on'}">${headerHTML()}${main}</main>` + navHTML() + sheetHTML();
+}
+function render() {
+  if (!S) { app.innerHTML = sheetHTML(); let g = 0; while (measurePagers() && g++ < 3) app.innerHTML = sheetHTML(); return; }
+  app.innerHTML = buildHTML();
+  let guard = 0; while (measurePagers() && guard++ < 3) app.innerHTML = buildHTML();
+  fitOptional();
+  floats(); ui.anim = null;
+  if (ui.focus) { const f = document.querySelector(ui.focus); if (f) { try { f.focus({ preventScroll: true }); } catch (e) { } } ui.focus = null; }
+}
+function floats() { const e = S.enc; if (!e || !e.fx || !e.fx.length) return; const sc = document.getElementById('scene'); if (!sc) return; e.fx.forEach((f, i) => { const el = document.createElement('div'); el.className = 'float ' + (f.on === 'me' ? 'me' : 'v'); el.textContent = '−' + f.n; el.style.left = f.on === 'me' ? '30%' : '72%'; el.style.top = (28 + i * 10) + '%'; el.style.animationDelay = (i * 0.12) + 's'; sc.appendChild(el); }); e.fx = []; }
+function nextSheet() { if (ui.sheet || !S || S.enc) return; const p = S.pending[0]; if (p) ui.sheet = { t: p }; }
+
+// ---------- Drawer handle ----------
+function handleHTML() { return ''; return `<button class="handle" data-act="drawer" aria-label="${ui.drawer === 'full' ? 'Lower the panel' : 'Raise the panel'}" aria-expanded="${ui.drawer === 'full'}"><i></i></button>`; }
+let drag = null;
+app.addEventListener('pointerdown', ev => {
+  if (prefs.layout !== 'drawer') return; const h = ev.target.closest('.handle'); if (!h) return;
+  const m = app.querySelector('main'), p = app.querySelector('main .panel'); if (!m || !p) return;
+  drag = { y: ev.clientY, h: p.offsetHeight, mh: m.clientHeight, m, moved: false }; h.setPointerCapture(ev.pointerId);
+});
+app.addEventListener('pointermove', ev => {
+  if (!drag) return; const dy = ev.clientY - drag.y; if (Math.abs(dy) > 6) drag.moved = true; if (!drag.moved) return;
+  const hh = (app.querySelector('main .hdr') || {}).offsetHeight || 0; const nh = clamp(drag.h - dy, drag.mh * 0.25, drag.mh - hh); drag.m.classList.add('dragging'); drag.m.style.setProperty('--dh', nh + 'px');
+});
+app.addEventListener('pointerup', ev => {
+  if (!drag) return; const d = drag; drag = null; if (!d.moved) return;
+  const p = app.querySelector('main .panel'); const hh = (app.querySelector('main .hdr') || {}).offsetHeight || 0; const ratio = p.offsetHeight / (d.mh - hh); ui.drawer = ratio > 0.76 ? 'full' : 'peek'; d.m.classList.remove('dragging'); d.m.style.removeProperty('--dh');
+  ui.keepScroll = true; ui.dragged = true; render();
+});
+
+// ---------- Actions ----------
+app.addEventListener('click', ev => { if (ui.dragged) { ui.dragged = false; return; } const el = ev.target.closest('[data-act]'); if (!el || el.disabled) return; if (el.dataset.act === 'ov' && ev.target.closest('[data-stop]')) return; act(el.dataset.act, el.dataset); });
+function act(a, d) {
+  const e = S && S.enc;
+  switch (a) {
+    case 'begin': { const nm = (document.getElementById('nm').value || 'Lid').trim().slice(0, 24) || 'Lid'; newGame(nm); ui.sheet = null; ui.view = 'home'; break; }
+    case 'view': ui.view = d.v; ui.pages = {}; break;
+    case 'sheet': ui.sheet = { t: d.s }; ui.pages = {}; ui.dtab = 'form'; ui.atab = 'abil'; break;
+    case 'move': ui.moving = +d.i; ui.sheet = null; break;
+    case 'move-cancel': ui.moving = null; break;
+    case 'copy': { const t = document.getElementById('exp'); const done = () => { const c = document.getElementById('copied'); if (c) c.textContent = 'Copied.'; }; try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); }); } catch (e) { t.select(); } return; }
+    case 'restore': { const v = (document.getElementById('imp') || {}).value || ''; const r = loadCode(v); if (r !== true) { ui.importErr = r; break; } ui.importErr = ''; ui.sheet = null; ui.view = 'home'; sys('[Save restored. Welcome back.]'); catchUp(); break; }
+    case 'page': ui.pages[d.k] = Math.max(0, (ui.pages[d.k] || 0) + (+d.d)); break;
+    case 'sub': ui.sub = d.k; ui.pages = {}; break;
+    case 'dtab': ui.dtab = d.k; break;
+    case 'atab': ui.atab = d.k; break;
+    case 'close': case 'ov': ui.sheet = S ? null : { t: 'intro' }; ui.importErr = ''; break;
+    case 'pref': prefs[d.k] = d.v; lsSet(PREF_KEY, prefs); applyPrefs(); remeasure(); break;
+    case 'drawer': ui.drawer = ui.drawer === 'full' ? 'peek' : 'full'; break;
+    case 'wait': { ui.drawer = 'full'; const r = startEncounter(nextArrival()); if (r && r.companion) ui.sheet = { t: 'companion' }; ui.focus = '.act.go'; break; }
+    case 'rest': if (rest()) sys('[You close your lid and rest. Fully healed.]'); break;
+    case 'nap': { const r = nap(); if (r) { autoManage(); ui.sheet = { t: 'report', r }; } break; }
+    case 'setform': S.form = d.k; ui.keepScroll = true; break;
+    case 'pickbait': { const i = +d.i; S.bait = i < 0 ? null : S.grid[i] && S.grid[i].uid; ui.keepScroll = true; break; }
+    case 'moveto': if (moveTo(d.k)) ui.sheet = null; break;
+    case 'lure': actLure(); if (S.enc.phase === 'combat') ui.anim = 'chomp'; ui.focus = '.act.best, .act'; break;
+    case 'pass': actLetPass(); ui.focus = '[data-act=close-enc]'; break;
+    case 'lunge': actLunge(); break;
+    case 'letgo': elog(`You let ${VISITORS[e.vid].name} walk away.`); finish('missed'); break;
+    case 'do': if (d.k === 'retreat') { retreat(); ui.focus = '[data-act=close-enc]'; break; } { if (ui.sheet && ui.sheet.t === 'moves') ui.sheet = null; const hp0 = S.hp; playerAction(d.k, d.c != null ? +d.c : undefined); ui.anim = ['bite', 'weapon', 'clench'].includes(d.k) ? 'chomp' : S.hp < hp0 ? 'hurt' : null; if (S.enc && S.enc.phase === 'done') ui.focus = '[data-act=close-enc]'; else ui.focus = '.act.best'; break; }
+    case 'close-enc': { ui.drawer = 'peek'; closeEncounter(); autoManage(); ui.anim = 'lick'; ui.focus = '[data-act=wait]'; break; }
+    case 'asi': applyAsi(d.k); S.pending.shift(); ui.sheet = null; break;
+    case 'evo': evolveTo(d.k); S.pending.shift(); autoManage(); ui.sheet = null; break;
+    case 'comp': chooseCompanion(d.k, []); ui.sheet = null; if (d.k === 'snack') ui.anim = 'lick'; break;
+    case 'reset-yes': lsSet(SAVE_KEY, null); S = null; ui.sheet = { t: 'intro' }; render(); return;
+    case 'item': ui.sheet = { t: 'item', i: +d.i }; ui.pages = {}; break;
+    case 'cell': if (ui.moving != null) { moveCell(ui.moving, +d.i); ui.moving = null; } break;
+    case 'setbait': { const c = S.grid[+d.i]; S.bait = S.bait === c.uid ? null : c.uid; ui.sheet = null; ui.keepScroll = true; break; }
+    case 'eat': { const m = []; eatItem(+d.i, m); m.forEach(x => sys(x.text)); autoManage(); ui.sheet = null; ui.keepScroll = true; break; }
+    case 'digest': if (startDigest(+d.i)) { sys('[Digestion started. Please do not shake the box.]'); autoManage(); } ui.sheet = null; ui.keepScroll = true; break;
+    case 'attune': if (!toggleAttune(+d.i)) sys('[Only 3 magic items can be switched on at once.]', 'bad'); ui.sheet = null; ui.keepScroll = true; break;
+    case 'spit': if (spitOut(+d.i)) autoManage(); ui.sheet = null; ui.keepScroll = true; break;
+  }
+  if (S) { nextSheet(); save(); }
+  render();
+}
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && ui.sheet && ['settings', 'howto', 'disguise', 'move', 'item', 'report', 'reset', 'max'].includes(ui.sheet.t)) { ui.sheet = null; render(); } });
+
+// ---------- Save, time, sync ----------
+const cloud = { db: null, uid: null, t: null };
+function save() { if (!S) return; S.lastSeen = Date.now(); S.savedAt = Date.now(); lsSet(SAVE_KEY, S); if (cloud.db) { clearTimeout(cloud.t); cloud.t = setTimeout(pushCloud, 2500); } }
+async function pushCloud() { try { await cloud.db.doc('data/users/' + cloud.uid + '/save').set(JSON.parse(JSON.stringify({ s: S, savedAt: S.savedAt }))); } catch (e) { } }
+async function cloudInit() {
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return; cloud.db = db; cloud.uid = uid;
+    const snap = await db.doc('data/users/' + uid + '/save').get(); const r = snap.exists ? snap.data() : null;
+    if (r && r.s && (r.savedAt || 0) > ((S && S.savedAt) || 0) && !(S && S.enc)) { if (migrate(r.s)) { lsSet(SAVE_KEY, S); ui.sheet = null; catchUp(); render(); } }
+    else if (S) pushCloud();
+  } catch (e) { }
+}
+function catchUp() {
+  const now = Date.now(); tickNaps(now);
+  const mins = Math.min(480, (now - (S.lastSeen || now)) / 60000);
+  if (mins >= 2 && !S.enc) { const r = simulate(mins, true); autoManage(); if (!ui.sheet) ui.sheet = { t: 'report', r }; }
+  else if (mins > 0) simulate(mins, false);
+  S.lastTick = now; save();
+}
+setInterval(() => {
+  if (!S) return; const now = Date.now(); const mins = (now - (S.lastTick || now)) / 60000;
+  if (mins >= 1) { S.lastTick = now; const before = JSON.stringify([S.belly, S.hp, !!S.digest, S.naps, S.notoriety]); simulate(mins, false); tickNaps(now); save(); if (before !== JSON.stringify([S.belly, S.hp, !!S.digest, S.naps, S.notoriety]) && !document.querySelector('.ov')) { ui.keepScroll = true; render(); } else tickTimers(); return; }
+  tickTimers();
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (!S) return; if (document.hidden) save(); else { catchUp(); nextSheet(); render(); } });
+let rsT = null;
+window.addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { remeasure(); if (S || ui.sheet) render(); }, 150); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { remeasure(); if (S || ui.sheet) render(); });
+const APP_VERSION = '0.5.0';
+function saveCode() { return 'CMV1:' + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+function loadCode(code) {
+  code = String(code || '').trim().replace(/\s+/g, '');
+  if (!code.startsWith('CMV1:')) return 'That does not look like a save code. It should start with CMV1:';
+  let data; try { data = JSON.parse(decodeURIComponent(escape(atob(code.slice(5))))); } catch (e) { return 'That code is damaged or incomplete. Check you copied all of it.'; }
+  const prev = S; if (!migrate(data)) { S = prev; return 'That save is from a version this game cannot read.'; }
+  S.lastSeen = Date.now(); S.enc = null; lsSet(SAVE_KEY, S); return true;
+}
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/claude|anthropic/.test(location.host)) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { }); }); }
+function start(hot) {
+  const loaded = hot && hot.s ? hot.s : lsGet(SAVE_KEY);
+  if (loaded && migrate(loaded)) { if (hot && hot.view) ui.view = hot.view; catchUp(); nextSheet(); render(); }
+  else { ui.sheet = { t: 'intro' }; render(); }
+  cloudInit();
+}
+if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ s: S, view: ui.view }));
+if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+
+</script>
+</body></html>
