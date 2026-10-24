@@ -42,6 +42,10 @@ node tools/fit.js && node tools/cut.js && node tools/pwa.js
 
 The tests use Playwright with Chromium.
 
+## Ren'Py edition
+
+A story version of the game, built for Ren'Py, lives in [`renpy/`](renpy/). Setup steps are in `renpy/README.md`.
+
 ## Credits
 
 See `CREDITS.md`.
